@@ -1,0 +1,1081 @@
+{
+  "JEE Main": [
+    "Physics",
+    "Mathematics",
+    "Previous Year Papers",
+    "Mock Tests",
+    "Sample Papers",
+    "Chapter-wise Practice",
+    "Formula Sheets"
+  ],
+  "JEE Advanced": [
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "Previous Year Papers",
+    "Mock Tests",
+    "Archive Questions",
+    "Advanced Problems"
+  ],
+  "BITSAT": [
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "English",
+    "Logical Reasoning",
+    "Previous Year Papers",
+    "Mock Tests"
+  ],
+  "VITEEE": [
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "English",
+    "Previous Year Papers",
+    "Mock Tests"
+  ],
+  "SRMJEEE": [
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "Previous Year Papers",
+    "Mock Tests"
+  ],
+  "COMEDK": [
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "Previous Year Papers",
+    "Mock Tests"
+  ],
+  "MHT CET": [
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "Biology",
+    "Previous Year Papers",
+    "Mock Tests"
+  ],
+  "KCET": [
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "Biology",
+    "Previous Year Papers",
+    "Mock Tests"
+  ],
+  "WBJEE": [
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "Previous Year Papers",
+    "Mock Tests"
+  ],
+  "KEAM": [
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "Previous Year Papers",
+    "Mock Tests"
+  ],
+  "GATE": [
+    "Computer Science",
+    "Electronics",
+    "Electrical",
+    "Mechanical",
+    "Civil",
+    "Chemical",
+    "Previous Year Papers",
+    "Mock Tests"
+  ],
+  "NEET UG": [
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "Botany",
+    "Zoology",
+    "Previous Year Papers",
+    "Mock Tests",
+    "NCERT Solutions"
+  ],
+  "NEET PG": [
+    "Anatomy",
+    "Physiology",
+    "Biochemistry",
+    "Pathology",
+    "Pharmacology",
+    "Microbiology",
+    "Medicine",
+    "Surgery"
+  ],
+  "AIIMS": [
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "General Knowledge",
+    "Logical Reasoning",
+    "Previous Year Papers"
+  ],
+  "JIPMER": [
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "English",
+    "Logical Reasoning",
+    "Previous Year Papers"
+  ],
+  "NEET SS": [
+    "Cardiology",
+    "Neurology",
+    "Nephrology",
+    "Gastroenterology",
+    "Pulmonology",
+    "Endocrinology"
+  ],
+  "FMGE": [
+    "Anatomy",
+    "Physiology",
+    "Biochemistry",
+    "Pathology",
+    "Pharmacology",
+    "Microbiology"
+  ],
+  "INI CET": [
+    "General Medicine",
+    "General Surgery",
+    "Pediatrics",
+    "Obstetrics",
+    "Psychiatry",
+    "Radiology"
+  ],
+  "NEET MDS": [
+    "Oral Pathology",
+    "Oral Medicine",
+    "Orthodontics",
+    "Periodontics",
+    "Prosthodontics"
+  ],
+  "UPSC Civil Services (IAS)": [
+    "General Studies I",
+    "General Studies II",
+    "General Studies III",
+    "General Studies IV",
+    "Optional Subject",
+    "Essay Writing",
+    "Current Affairs"
+  ],
+  "UPSC NDA": [
+    "Mathematics",
+    "General Ability Test",
+    "English",
+    "General Knowledge",
+    "Previous Year Papers"
+  ],
+  "UPSC CDS": [
+    "English",
+    "General Knowledge",
+    "Elementary Mathematics",
+    "Previous Year Papers"
+  ],
+  "UPSC CAPF": [
+    "General Ability",
+    "General Studies",
+    "Essay Writing",
+    "Previous Year Papers"
+  ],
+  "State PSC": [
+    "General Studies",
+    "Current Affairs",
+    "History",
+    "Geography",
+    "Polity",
+    "Economics"
+  ],
+  "SSC CGL": [
+    "General Intelligence",
+    "General Awareness",
+    "Quantitative Aptitude",
+    "English",
+    "Previous Year Papers"
+  ],
+  "SSC CHSL": [
+    "General Intelligence",
+    "English",
+    "Quantitative Aptitude",
+    "General Awareness"
+  ],
+  "SSC MTS": [
+    "Reasoning",
+    "Numerical Aptitude",
+    "English",
+    "General Awareness"
+  ],
+  "SSC CPO": [
+    "Reasoning",
+    "General Knowledge",
+    "Quantitative Aptitude",
+    "English"
+  ],
+  "SSC JE": [
+    "Reasoning",
+    "General Awareness",
+    "Civil Engineering",
+    "Electrical Engineering",
+    "Mechanical Engineering"
+  ],
+  "IBPS PO": [
+    "English",
+    "Quantitative Aptitude",
+    "Reasoning",
+    "General Awareness",
+    "Computer Knowledge"
+  ],
+  "IBPS Clerk": [
+    "English",
+    "Quantitative Aptitude",
+    "Reasoning",
+    "General Awareness",
+    "Computer Knowledge"
+  ],
+  "IBPS SO": [
+    "Professional Knowledge",
+    "English",
+    "Reasoning",
+    "Quantitative Aptitude"
+  ],
+  "IBPS RRB": [
+    "Reasoning",
+    "Quantitative Aptitude",
+    "General Awareness",
+    "Computer Knowledge"
+  ],
+  "SBI PO": [
+    "English",
+    "Quantitative Aptitude",
+    "Reasoning",
+    "General Awareness",
+    "Computer Aptitude"
+  ],
+  "SBI Clerk": [
+    "English",
+    "Quantitative Aptitude",
+    "Reasoning",
+    "General Awareness"
+  ],
+  "RBI Grade B": [
+    "General Awareness",
+    "English",
+    "Quantitative Aptitude",
+    "Reasoning",
+    "Economic Issues"
+  ],
+  "NABARD": [
+    "General Awareness",
+    "English",
+    "Reasoning",
+    "Quantitative Aptitude",
+    "Agriculture"
+  ],
+  "LIC AAO": [
+    "Reasoning",
+    "Quantitative Aptitude",
+    "English",
+    "General Awareness",
+    "Insurance"
+  ],
+  "SEBI Grade A": [
+    "General Awareness",
+    "English",
+    "Quantitative Aptitude",
+    "Reasoning",
+    "Capital Markets"
+  ],
+  "RRB NTPC": [
+    "General Awareness",
+    "Mathematics",
+    "Reasoning",
+    "General Science"
+  ],
+  "RRB JE": [
+    "Reasoning",
+    "General Awareness",
+    "Mathematics",
+    "General Science",
+    "Engineering"
+  ],
+  "RRB ALP": [
+    "Mathematics",
+    "Reasoning",
+    "General Science",
+    "General Awareness"
+  ],
+  "RRB Group D": [
+    "General Science",
+    "Mathematics",
+    "Reasoning",
+    "General Awareness"
+  ],
+  "RRB RPF": [
+    "General Awareness",
+    "Arithmetic",
+    "Reasoning",
+    "General Science"
+  ],
+  "Indian Army": [
+    "General Knowledge",
+    "Mathematics",
+    "English",
+    "Reasoning"
+  ],
+  "Indian Navy": [
+    "Mathematics",
+    "Physics",
+    "Chemistry",
+    "English"
+  ],
+  "Indian Air Force": [
+    "Mathematics",
+    "Physics",
+    "English",
+    "Reasoning"
+  ],
+  "AFCAT": [
+    "General Awareness",
+    "Verbal Ability",
+    "Numerical Ability",
+    "Reasoning"
+  ],
+  "CDS": [
+    "English",
+    "General Knowledge",
+    "Elementary Mathematics"
+  ],
+  "NDA": [
+    "Mathematics",
+    "General Ability",
+    "Physics",
+    "Chemistry"
+  ],
+  "CAPF": [
+    "General Ability",
+    "General Studies",
+    "Essay Writing"
+  ],
+  "CAT": [
+    "Quantitative Ability",
+    "Verbal Ability",
+    "Data Interpretation",
+    "Logical Reasoning",
+    "Previous Year Papers",
+    "Mock Tests"
+  ],
+  "XAT": [
+    "Verbal Ability",
+    "Decision Making",
+    "Quantitative Ability",
+    "General Knowledge"
+  ],
+  "SNAP": [
+    "General English",
+    "Quantitative Ability",
+    "Analytical Reasoning",
+    "Current Affairs"
+  ],
+  "NMAT": [
+    "Language Skills",
+    "Quantitative Skills",
+    "Logical Reasoning"
+  ],
+  "MAT": [
+    "Language Comprehension",
+    "Mathematical Skills",
+    "Data Analysis",
+    "Intelligence"
+  ],
+  "CMAT": [
+    "Quantitative Techniques",
+    "Logical Reasoning",
+    "Language Comprehension",
+    "General Awareness"
+  ],
+  "ATMA": [
+    "Analytical Reasoning",
+    "Verbal Skills",
+    "Quantitative Skills"
+  ],
+  "IIFT": [
+    "Quantitative Ability",
+    "Logical Reasoning",
+    "Verbal Ability",
+    "General Awareness"
+  ],
+  "GATE CS": [
+    "Programming",
+    "Data Structures",
+    "Algorithms",
+    "Operating Systems",
+    "Networks",
+    "Databases"
+  ],
+  "GATE EC": [
+    "Networks",
+    "Signals",
+    "Electronic Devices",
+    "Communications",
+    "Control Systems"
+  ],
+  "GATE EE": [
+    "Electric Circuits",
+    "Machines",
+    "Power Systems",
+    "Control Systems",
+    "Measurements"
+  ],
+  "GATE ME": [
+    "Thermodynamics",
+    "Mechanics",
+    "Manufacturing",
+    "Machine Design",
+    "Fluid Mechanics"
+  ],
+  "GATE CE": [
+    "Structural Engineering",
+    "Geotechnical",
+    "Water Resources",
+    "Transportation",
+    "Environmental"
+  ],
+  "GATE CH": [
+    "Chemical Engineering",
+    "Thermodynamics",
+    "Fluid Mechanics",
+    "Heat Transfer",
+    "Mass Transfer"
+  ],
+  "GATE IN": [
+    "Instrumentation",
+    "Control Systems",
+    "Measurements",
+    "Signals",
+    "Analog Electronics"
+  ],
+  "GATE AG": [
+    "Agriculture",
+    "Soil Science",
+    "Plant Breeding",
+    "Horticulture",
+    "Crop Production"
+  ],
+  "GATE BT": [
+    "Molecular Biology",
+    "Biochemistry",
+    "Microbiology",
+    "Cell Biology",
+    "Biotechnology"
+  ],
+  "GATE MT": [
+    "Metallurgy",
+    "Materials Science",
+    "Thermodynamics",
+    "Physical Metallurgy"
+  ],
+  "IMO": [
+    "Algebra",
+    "Geometry",
+    "Number Theory",
+    "Combinatorics",
+    "Problem Solving"
+  ],
+  "IPhO": [
+    "Mechanics",
+    "Thermodynamics",
+    "Electromagnetism",
+    "Optics",
+    "Modern Physics"
+  ],
+  "IChO": [
+    "Physical Chemistry",
+    "Organic Chemistry",
+    "Inorganic Chemistry",
+    "Analytical Chemistry"
+  ],
+  "IBO": [
+    "Cell Biology",
+    "Genetics",
+    "Ecology",
+    "Evolution",
+    "Physiology"
+  ],
+  "IOI": [
+    "Algorithms",
+    "Data Structures",
+    "Graph Theory",
+    "Dynamic Programming",
+    "Competitive Programming"
+  ],
+  "IAO": [
+    "Celestial Mechanics",
+    "Astrophysics",
+    "Observational Astronomy",
+    "Cosmology"
+  ],
+  "IPhO Junior": [
+    "Basic Mechanics",
+    "Heat",
+    "Optics",
+    "Electricity",
+    "Problem Solving"
+  ],
+  "IJSO": [
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "General Science"
+  ],
+  "IMO Asia": [
+    "Algebra",
+    "Geometry",
+    "Number Theory",
+    "Combinatorics"
+  ],
+  "Balkan MO": [
+    "Algebra",
+    "Geometry",
+    "Number Theory",
+    "Combinatorics"
+  ],
+  "EGMO": [
+    "Algebra",
+    "Geometry",
+    "Number Theory",
+    "Combinatorics"
+  ],
+  "IOAA": [
+    "Astronomy",
+    "Astrophysics",
+    "Cosmology",
+    "Observational Skills"
+  ],
+  "IESO": [
+    "Geology",
+    "Meteorology",
+    "Oceanography",
+    "Environmental Science"
+  ],
+  "IOL": [
+    "Linguistics",
+    "Language Puzzles",
+    "Phonology",
+    "Morphology",
+    "Syntax"
+  ],
+  "IPhO Phil": [
+    "Philosophy of Science",
+    "Logic",
+    "Ethics",
+    "Epistemology"
+  ],
+  "SAT": [
+    "Reading",
+    "Writing",
+    "Mathematics",
+    "Essay",
+    "Practice Tests"
+  ],
+  "ACT": [
+    "English",
+    "Mathematics",
+    "Reading",
+    "Science",
+    "Writing"
+  ],
+  "AP Calculus": [
+    "Limits",
+    "Derivatives",
+    "Integrals",
+    "Applications",
+    "Practice"
+  ],
+  "AP Physics": [
+    "Mechanics",
+    "Electricity",
+    "Magnetism",
+    "Waves",
+    "Modern Physics"
+  ],
+  "AP Chemistry": [
+    "Atomic Structure",
+    "Bonding",
+    "Reactions",
+    "Thermodynamics",
+    "Kinetics"
+  ],
+  "IB Diploma": [
+    "Theory of Knowledge",
+    "Extended Essay",
+    "CAS",
+    "Subject Studies"
+  ],
+  "PSAT": [
+    "Reading",
+    "Writing",
+    "Mathematics",
+    "Practice Tests"
+  ],
+  "GRE": [
+    "Verbal Reasoning",
+    "Quantitative Reasoning",
+    "Analytical Writing",
+    "Practice Tests"
+  ],
+  "GMAT": [
+    "Quantitative",
+    "Verbal",
+    "Integrated Reasoning",
+    "Analytical Writing"
+  ],
+  "TOEFL": [
+    "Reading",
+    "Listening",
+    "Speaking",
+    "Writing",
+    "Practice Tests"
+  ],
+  "IELTS": [
+    "Listening",
+    "Reading",
+    "Writing",
+    "Speaking",
+    "Practice Tests"
+  ],
+  "PTE": [
+    "Speaking",
+    "Writing",
+    "Reading",
+    "Listening",
+    "Practice Tests"
+  ],
+  "MCAT": [
+    "Biological Sciences",
+    "Physical Sciences",
+    "Verbal Reasoning",
+    "Writing"
+  ],
+  "LSAT": [
+    "Logical Reasoning",
+    "Analytical Reasoning",
+    "Reading Comprehension"
+  ],
+  "DAT": [
+    "Biology",
+    "General Chemistry",
+    "Organic Chemistry",
+    "Perceptual Ability"
+  ],
+  "A-Levels": [
+    "Mathematics",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "Economics",
+    "Computer Science"
+  ],
+  "GCSE": [
+    "Mathematics",
+    "English",
+    "Science",
+    "History",
+    "Geography"
+  ],
+  "IGCSE": [
+    "Mathematics",
+    "English",
+    "Science",
+    "Business Studies",
+    "Economics"
+  ],
+  "UKCAT": [
+    "Verbal Reasoning",
+    "Quantitative Reasoning",
+    "Abstract Reasoning",
+    "Decision Making"
+  ],
+  "BMAT": [
+    "Aptitude Skills",
+    "Scientific Knowledge",
+    "Writing Task"
+  ],
+  "LNAT": [
+    "Multiple Choice",
+    "Essay"
+  ],
+  "STEP": [
+    "Pure Mathematics",
+    "Mechanics",
+    "Probability",
+    "Statistics"
+  ],
+  "MAT Oxford": [
+    "Mathematics Problems",
+    "Applied Questions"
+  ],
+  "AWS SAA": [
+    "EC2",
+    "S3",
+    "VPC",
+    "IAM",
+    "RDS",
+    "Lambda",
+    "CloudFormation"
+  ],
+  "Azure Admin": [
+    "Virtual Machines",
+    "Storage",
+    "Networking",
+    "Identity",
+    "Security"
+  ],
+  "GCP ACE": [
+    "Compute Engine",
+    "Storage",
+    "Networking",
+    "IAM",
+    "Kubernetes"
+  ],
+  "CCNA": [
+    "Networking Fundamentals",
+    "IP Addressing",
+    "Routing",
+    "Switching",
+    "Security"
+  ],
+  "CCNP": [
+    "Advanced Routing",
+    "Switching",
+    "Troubleshooting",
+    "Network Design"
+  ],
+  "CompTIA A+": [
+    "Hardware",
+    "Software",
+    "Networking",
+    "Security",
+    "Troubleshooting"
+  ],
+  "Security+": [
+    "Network Security",
+    "Compliance",
+    "Threats",
+    "Cryptography"
+  ],
+  "CISSP": [
+    "Security Management",
+    "Asset Security",
+    "Architecture",
+    "Communication",
+    "Identity Management"
+  ],
+  "CEH": [
+    "Footprinting",
+    "Scanning",
+    "Enumeration",
+    "System Hacking",
+    "Malware"
+  ],
+  "PMP": [
+    "Project Integration",
+    "Scope",
+    "Schedule",
+    "Cost",
+    "Quality",
+    "Risk"
+  ],
+  "CFA": [
+    "Ethics",
+    "Quantitative Methods",
+    "Economics",
+    "Financial Reporting",
+    "Equity",
+    "Fixed Income"
+  ],
+  "FRM": [
+    "Risk Management",
+    "Quantitative Analysis",
+    "Financial Markets",
+    "Valuation"
+  ],
+  "CPA": [
+    "Auditing",
+    "Financial Accounting",
+    "Regulation",
+    "Business Environment"
+  ],
+  "ACCA": [
+    "Financial Accounting",
+    "Management Accounting",
+    "Taxation",
+    "Audit",
+    "Law"
+  ],
+  "CA": [
+    "Accounting",
+    "Auditing",
+    "Taxation",
+    "Corporate Laws",
+    "Financial Management"
+  ],
+  "CS": [
+    "Company Law",
+    "Securities Laws",
+    "Corporate Governance",
+    "Economic Laws"
+  ],
+  "CMA": [
+    "Financial Accounting",
+    "Cost Accounting",
+    "Financial Management",
+    "Taxation"
+  ],
+  "CFP": [
+    "Financial Planning",
+    "Investment Planning",
+    "Tax Planning",
+    "Retirement",
+    "Estate Planning"
+  ],
+  "CodeChef": [
+    "Algorithms",
+    "Data Structures",
+    "Dynamic Programming",
+    "Graph Theory"
+  ],
+  "Codeforces": [
+    "Algorithms",
+    "Data Structures",
+    "Math",
+    "Greedy",
+    "DP"
+  ],
+  "ICPC": [
+    "Algorithms",
+    "Data Structures",
+    "Graph Theory",
+    "Math",
+    "Geometry"
+  ],
+  "Google Code Jam": [
+    "Algorithms",
+    "Math",
+    "Dynamic Programming",
+    "Graph Theory"
+  ],
+  "Putnam": [
+    "Algebra",
+    "Analysis",
+    "Combinatorics",
+    "Geometry",
+    "Number Theory"
+  ],
+  "CLAT": [
+    "English",
+    "Current Affairs",
+    "Legal Reasoning",
+    "Logical Reasoning",
+    "Quantitative Techniques"
+  ],
+  "NATA": [
+    "Mathematics",
+    "Drawing",
+    "Aptitude",
+    "Architecture"
+  ],
+  "NID": [
+    "Drawing",
+    "Design",
+    "Aptitude",
+    "Creative Thinking"
+  ],
+  "NIFT": [
+    "Creative Ability",
+    "General Knowledge",
+    "Communication Skills"
+  ],
+  "CUET": [
+    "General Test",
+    "Domain Subjects",
+    "Language",
+    "Mathematics",
+    "Physics"
+  ],
+  "AILET": [
+    "English",
+    "General Knowledge",
+    "Legal Aptitude",
+    "Logical Reasoning",
+    "Mathematics"
+  ],
+  "DUET": [
+    "General Awareness",
+    "English",
+    "Reasoning",
+    "Subject Knowledge"
+  ],
+  "CTET": [
+    "Child Development",
+    "Language I",
+    "Language II",
+    "Mathematics",
+    "Environmental Studies"
+  ],
+  "UGC NET": [
+    "Teaching Aptitude",
+    "Research Aptitude",
+    "Communication",
+    "Logical Reasoning",
+    "Subject Knowledge"
+  ],
+  "DSSSB": [
+    "General Awareness",
+    "Reasoning",
+    "Numerical Ability",
+    "Hindi",
+    "English"
+  ],
+  "KVS": [
+    "English",
+    "Hindi",
+    "General Knowledge",
+    "Reasoning",
+    "Subject Knowledge"
+  ],
+  "UPTET": [
+    "Child Development",
+    "Language I",
+    "Language II",
+    "Mathematics",
+    "Environmental Studies"
+  ],
+  "CBSE Class 10": [
+    "Mathematics",
+    "Science",
+    "Social Science",
+    "English",
+    "Hindi",
+    "Sample Papers"
+  ],
+  "CBSE Class 12": [
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "Biology",
+    "English",
+    "Sample Papers"
+  ],
+  "CBSE Class 11": [
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "Biology",
+    "English"
+  ],
+  "CBSE Class 9": [
+    "Mathematics",
+    "Science",
+    "Social Science",
+    "English",
+    "Hindi"
+  ],
+  "ICSE Class 10": [
+    "Mathematics",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "English",
+    "History"
+  ],
+  "State Board": [
+    "Mathematics",
+    "Science",
+    "Social Science",
+    "English",
+    "Regional Language"
+  ],
+  "NSO": [
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "Logical Reasoning"
+  ],
+  "NCO": [
+    "Computer Fundamentals",
+    "MS Office",
+    "Internet",
+    "Programming"
+  ],
+  "NTSE": [
+    "Mental Ability Test",
+    "Scholastic Aptitude Test",
+    "Physics",
+    "Chemistry",
+    "Mathematics"
+  ],
+  "KVPY": [
+    "Physics",
+    "Chemistry",
+    "Mathematics",
+    "Biology"
+  ],
+  "CA Foundation": [
+    "Accounting",
+    "Business Laws",
+    "Business Mathematics",
+    "Business Economics"
+  ],
+  "CA Intermediate": [
+    "Accounting",
+    "Corporate Laws",
+    "Taxation",
+    "Cost Accounting"
+  ],
+  "CA Final": [
+    "Financial Reporting",
+    "Strategic Management",
+    "Auditing",
+    "Corporate Laws"
+  ],
+  "CS Foundation": [
+    "Business Environment",
+    "Business Management",
+    "Business Economics",
+    "Accounting"
+  ],
+  "CS Executive": [
+    "Company Law",
+    "Cost Accounting",
+    "Tax Laws",
+    "Financial Management"
+  ],
+  "CS Professional": [
+    "Advanced Company Law",
+    "Secretarial Audit",
+    "Corporate Restructuring"
+  ],
+  "CMA Foundation": [
+    "Economics",
+    "Accounting",
+    "Laws",
+    "Business Mathematics"
+  ],
+  "CMA Intermediate": [
+    "Financial Accounting",
+    "Laws",
+    "Taxation",
+    "Cost Accounting"
+  ],
+  "CMA Final": [
+    "Corporate Laws",
+    "Financial Management",
+    "Cost Management",
+    "Tax Laws"
+  ]
+}
