@@ -45,6 +45,9 @@ app.use('/api/settings', require('./routes/settings'));
 app.use('/api/pricing-plans', require('./routes/pricingPlans'));
 app.use('/api/cart', require('./routes/cart'));
 
+// ⭐ MOCK TEST GENERATOR (Claude AI)
+app.use('/api/mocktest', require('./routes/mocktest'));
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ 
@@ -59,7 +62,8 @@ app.get('/health', (req, res) => {
       'Payments',
       'Chatbot',
       'Pricing Plans (20 plans)', // NEW
-      'Shopping Cart' // NEW
+      'Shopping Cart', // NEW
+      'Study Planner'  // NEW
     ]
   });
 });
@@ -106,8 +110,9 @@ app.listen(PORT, () => {
   console.log(`   - Materials:      /api/materials`);
   console.log(`   - Rentals:        /api/rentals`);
   console.log(`   - Admin:          /api/admin`);
-  console.log(`   - Pricing Plans:  /api/pricing-plans ⭐ NEW`);
-  console.log(`   - Cart:           /api/cart ⭐ NEW`);
+  console.log(`   - Pricing Plans:  /api/pricing-plans`);
+  console.log(`   - Cart:           /api/cart`);
+  console.log(`   - Mock Test:      /api/mocktest ⭐ NEW`);
   console.log(`\n🔧 Health Check: http://localhost:${PORT}/health\n`);
 });
 
