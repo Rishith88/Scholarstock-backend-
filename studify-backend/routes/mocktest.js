@@ -1,17 +1,11 @@
 // routes/mocktest.js
 // Mount in server.js: app.use('/api/mocktest', require('./routes/mocktest'));
-// This proxies Claude API so your key stays on the server, not exposed in frontend
 
 const express = require('express');
 const router  = express.Router();
 const axios   = require('axios');
-const authMiddleware = require('../middleware/auth');
-
-// Apply auth — only logged-in users can generate tests
-router.use(authMiddleware);
 
 // POST /api/mocktest/generate
-// Body: { category, subcategory, qCount, difficulty, qType }
 router.post('/generate', async (req, res) => {
   try {
     const { category, subcategory, qCount = 10, difficulty = 'medium', qType = 'mcq' } = req.body;
