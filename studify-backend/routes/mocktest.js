@@ -95,7 +95,7 @@ For true/false questions use type "tf", options must be exactly ["True", "False"
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.6,
-          maxOutputTokens: 4000,
+          maxOutputTokens: 8192,
         }
       },
       {
@@ -106,13 +106,16 @@ For true/false questions use type "tf", options must be exactly ["True", "False"
     // Extract text from Gemini response
     const raw = response.data.candidates[0].content.parts[0].text.trim();
 
-    // Strip any accidental markdown fences
-    const clean = raw
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/i, '')
-      .replace(/\s*```$/i, '')
-      .trim();
+    // Robustly extract JSON array — find first [ and last ] in response
+    const startIdx = raw.indexOf('[');
+    const endIdx   = raw.lastIndexOf(']');
 
+    if(startIdx === -1 || endIdx === -1 || endIdx < startIdx){
+      console.error('[MOCKTEST] No JSON array found in response:', raw.substring(0, 200));
+      return res.status(500).json({ success: false, message: 'Gemini did not return valid JSON. Try again.' });
+    }
+
+    const clean = raw.substring(startIdx, endIdx + 1);
     const questions = JSON.parse(clean);
 
     if (!Array.isArray(questions) || questions.length === 0) {
