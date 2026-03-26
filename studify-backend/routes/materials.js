@@ -4,12 +4,51 @@ const express = require('express');
 const router = express.Router();
 const Material = require('../models/Material');
 const { auth } = require('../middleware/auth');
+const { upload, cloudinary } = require('../middleware/upload');
 
 // Helper function to check if material is free
 // ⭐ FREE = subcategory is "Free Resources"
 function isFreeResource(material) {
   return material.subcategory?.toLowerCase() === 'free resources';
 }
+
+// ── Upload PDF to Cloudinary ──
+// POST /api/materials/upload
+router.post('/upload', auth, upload.single('pdf'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No PDF file uploaded' });
+    }
+
+    // Cloudinary URL is in req.file.path
+    const pdfUrl = req.file.path;
+
+    const material = new Material({
+      title:        req.body.title        || req.file.originalname,
+      description:  req.body.description  || '',
+      examCategory: req.body.examCategory || '',
+      subcategory:  req.body.subcategory  || '',
+      type:         'PDF',
+      pages:        parseInt(req.body.pages) || 1,
+      pricePerDay:  parseFloat(req.body.pricePerDay) || 0,
+      pdfUrl,                         // ← Cloudinary URL stored here
+      uploadedBy:   req.user.userId,
+      isActive:     true,
+    });
+
+    await material.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'PDF uploaded to Cloudinary and material created',
+      material,
+      pdfUrl,
+    });
+  } catch (error) {
+    console.error('[UPLOAD] Error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // Get all materials with pagination and filters
 router.get('/', async (req, res) => {
@@ -209,18 +248,14 @@ router.get('/:id/stream', async (req, res) => {
     const material = await Material.findById(req.params.id);
     if (!material) return res.status(404).json({ success: false, message: 'Material not found' });
 
-    // ⭐ CHECK IF FREE RESOURCE - No token needed!
     const isFree = isFreeResource(material.toObject());
 
     if (!isFree) {
       // Accept token from query param OR Authorization header
-      const token = req.query.token ||
-                    req.headers.authorization?.split(' ')[1];
-
+      const token = req.query.token || req.headers.authorization?.split(' ')[1];
       if (!token || token === 'undefined' || token === 'null') {
         return res.status(401).json({ success: false, message: 'No token provided' });
       }
-
       try {
         jwt.verify(token, process.env.JWT_SECRET);
       } catch (e) {
@@ -228,30 +263,23 @@ router.get('/:id/stream', async (req, res) => {
       }
     }
 
-    // ── If pdfUrl is a full HTTP/S URL (cloud storage like S3, Cloudinary, etc.) ──
+    // ── If pdfUrl is a Cloudinary / cloud URL → redirect to it ──
     if (material.pdfUrl && (material.pdfUrl.startsWith('http://') || material.pdfUrl.startsWith('https://'))) {
-      // Redirect to the cloud URL directly
       return res.redirect(material.pdfUrl);
     }
 
-    // ── Otherwise treat as local file path ──
+    // ── Legacy: local file (will not work on Render after redeploy) ──
     const filePath = path.join(__dirname, '..', material.pdfUrl);
-
     if (!fs.existsSync(filePath)) {
-      console.error('[STREAM] File not found at path:', filePath);
       return res.status(404).json({
         success: false,
-        message: 'PDF file not found. Note: files do not persist on Render free tier between deploys. Use cloud storage (S3/Cloudinary) for production.'
+        message: 'PDF file not found. Please re-upload this material.'
       });
     }
-
     const stat = fs.statSync(filePath);
-
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Length', stat.size);
     res.setHeader('Content-Disposition', `inline; filename="${material.title}.pdf"`);
-    res.setHeader('Cache-Control', 'no-store'); // prevent browser caching for security
-
     fs.createReadStream(filePath).pipe(res);
 
   } catch (error) {
@@ -323,4 +351,3 @@ router.get('/search/query', async (req, res) => {
 });
 
 module.exports = router;
-
