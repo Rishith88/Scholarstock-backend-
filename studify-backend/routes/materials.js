@@ -211,42 +211,51 @@ router.get('/:id/stream', async (req, res) => {
 
     // ⭐ CHECK IF FREE RESOURCE - No token needed!
     const isFree = isFreeResource(material.toObject());
-    
-    if (!isFree) {
-      // Not free - verify token
-      const token = req.query.token;
-      if (!token) return res.status(401).json({ success: false, message: 'No token' });
 
-      let decoded;
+    if (!isFree) {
+      // Accept token from query param OR Authorization header
+      const token = req.query.token ||
+                    req.headers.authorization?.split(' ')[1];
+
+      if (!token || token === 'undefined' || token === 'null') {
+        return res.status(401).json({ success: false, message: 'No token provided' });
+      }
+
       try {
-        decoded = jwt.verify(token, process.env.JWT_SECRET);
+        jwt.verify(token, process.env.JWT_SECRET);
       } catch (e) {
-        return res.status(401).json({ success: false, message: 'Invalid token' });
+        return res.status(401).json({ success: false, message: 'Invalid or expired token' });
       }
     }
 
-    // Build file path from pdfUrl stored in DB
+    // ── If pdfUrl is a full HTTP/S URL (cloud storage like S3, Cloudinary, etc.) ──
+    if (material.pdfUrl && (material.pdfUrl.startsWith('http://') || material.pdfUrl.startsWith('https://'))) {
+      // Redirect to the cloud URL directly
+      return res.redirect(material.pdfUrl);
+    }
+
+    // ── Otherwise treat as local file path ──
     const filePath = path.join(__dirname, '..', material.pdfUrl);
 
     if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ success: false, message: 'PDF file not found on server' });
+      console.error('[STREAM] File not found at path:', filePath);
+      return res.status(404).json({
+        success: false,
+        message: 'PDF file not found. Note: files do not persist on Render free tier between deploys. Use cloud storage (S3/Cloudinary) for production.'
+      });
     }
 
     const stat = fs.statSync(filePath);
-    const isDownload = false; // Downloads disabled to prevent piracy
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Length', stat.size);
-    res.setHeader(
-      'Content-Disposition',
-      isDownload
-        ? `attachment; filename="${material.title}.pdf"`
-        : `inline; filename="${material.title}.pdf"`
-    );
+    res.setHeader('Content-Disposition', `inline; filename="${material.title}.pdf"`);
+    res.setHeader('Cache-Control', 'no-store'); // prevent browser caching for security
 
     fs.createReadStream(filePath).pipe(res);
 
   } catch (error) {
+    console.error('[STREAM] Error:', error.message);
     res.status(500).json({ success: false, message: 'Server error', error: error.message });
   }
 });
@@ -314,3 +323,4 @@ router.get('/search/query', async (req, res) => {
 });
 
 module.exports = router;
+
