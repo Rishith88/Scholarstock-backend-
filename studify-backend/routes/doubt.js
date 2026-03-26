@@ -3,7 +3,7 @@
 // Uses same GEMINI_API_KEY as chatbot and mocktest
 
 const express = require('express');
-const router  = express.Router();
+const router  = express.Router(); 
 const axios   = require('axios');
 
 // POST /api/doubt/solve
