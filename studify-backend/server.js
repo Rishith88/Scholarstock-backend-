@@ -40,6 +40,8 @@ app.use('/api/categories', require('./routes/categories'));
 app.use('/api/referral', require('./routes/referral'));
 app.use('/api/referral-settings', require('./routes/referralSettings'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/mocktest', require('./routes/mocktest'));
+app.use('/api/doubt', require('./routes/doubt'));
 
 // ⭐ NEW ROUTES FOR PRICING SYSTEM
 app.use('/api/pricing-plans', require('./routes/pricingPlans'));
