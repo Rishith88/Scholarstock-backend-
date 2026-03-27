@@ -5,31 +5,10 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
-const multer = require('multer');
 const User = require('../models/User');
 const Material = require('../models/Material');
 const Rental = require('../models/Rental');
-
-// Setup multer for PDF uploads
-const uploadDir = path.join(__dirname, '../uploads/pdfs');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, unique + path.extname(file.originalname));
-  }
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB max
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') cb(null, true);
-    else cb(new Error('Only PDF files are allowed'));
-  }
-});
+const { upload } = require('../middleware/upload'); // ← Cloudinary upload
 
 // Get credentials from .env
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
@@ -365,7 +344,8 @@ router.post('/materials', verifyAdmin, upload.single('pdf'), async (req, res) =>
       return res.status(400).json({ success: false, message: 'Category is required' });
     }
 
-    const pdfUrl = `/uploads/pdfs/${req.file.filename}`;
+    // Cloudinary URL is in req.file.path
+    const pdfUrl = req.file.path;
 
     const material = new Material({
       title: req.body.title,
@@ -554,3 +534,4 @@ router.put('/categories', verifyAdmin, async (req, res) => {
 });
 
 module.exports = router;
+
