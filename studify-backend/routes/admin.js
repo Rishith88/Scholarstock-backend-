@@ -5,10 +5,28 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
+const multer = require('multer');
+const cloudinary = require('cloudinary').v2;
 const User = require('../models/User');
 const Material = require('../models/Material');
 const Rental = require('../models/Rental');
-const { upload } = require('../middleware/upload'); // ← Cloudinary upload
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// Memory storage — upload buffer directly to Cloudinary
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') cb(null, true);
+    else cb(new Error('Only PDF files are allowed'));
+  }
+});
 
 // Get credentials from .env
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
@@ -328,54 +346,59 @@ router.delete('/users/:id', verifyAdmin, async (req, res) => {
 // Create material
 router.post('/materials', verifyAdmin, upload.single('pdf'), async (req, res) => {
   try {
-    console.log('📥 Received upload request');
-    console.log('Body:', req.body);
-    console.log('File:', req.file);
+    console.log('📥 Upload request received. File:', req.file ? req.file.originalname : 'NONE');
 
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'PDF file is required' });
     }
 
-    // Map frontend fields to backend fields
-    const category = req.body.category; // Frontend sends 'category'
-    const price = req.body.price; // Frontend sends 'price'
+    const category = req.body.category;
+    const price = req.body.price;
 
     if (!category) {
       return res.status(400).json({ success: false, message: 'Category is required' });
     }
 
-    // Cloudinary URL is in req.file.path
-    const pdfUrl = req.file.path;
+    // Upload buffer directly to Cloudinary
+    const uploadResult = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          folder: 'scholarstock/pdfs',
+          resource_type: 'raw',
+          public_id: Date.now() + '_' + req.file.originalname.replace(/[^a-zA-Z0-9]/g, '_'),
+          format: 'pdf'
+        },
+        (error, result) => {
+          if (error) { console.error('Cloudinary error:', error); reject(error); }
+          else resolve(result);
+        }
+      );
+      stream.end(req.file.buffer);
+    });
+
+    console.log('✅ Uploaded to Cloudinary:', uploadResult.secure_url);
 
     const material = new Material({
-      title: req.body.title,
-      description: req.body.description || '',
-      examCategory: category,  // Map category -> examCategory
-      examLabel: category,     // Same as examCategory
-      subcategory: req.body.subcategory,
-      pricePerDay: parseFloat(price) || 29,  // Map price -> pricePerDay
-      type: req.body.type || 'notes',
-      pages: parseInt(req.body.pages) || 1,
-      pdfUrl
+      title:        req.body.title,
+      description:  req.body.description || '',
+      examCategory: category,
+      examLabel:    category,
+      subcategory:  req.body.subcategory || '',
+      pricePerDay:  parseFloat(price) || 0,
+      type:         req.body.type || 'PDF',
+      pages:        parseInt(req.body.pages) || 1,
+      pdfUrl:       uploadResult.secure_url,
+      isActive:     true,
     });
 
     await material.save();
-
     console.log('✅ Material saved:', material._id);
 
-    res.json({
-      success: true,
-      message: 'Material created successfully',
-      material
-    });
+    res.json({ success: true, message: 'Material uploaded to Cloudinary!', material });
 
   } catch (error) {
-    console.error('❌ Material creation error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
+    console.error('❌ Upload error:', error.message);
+    res.status(500).json({ success: false, message: error.message });
   }
 });
 
@@ -413,7 +436,7 @@ router.put('/materials/:id', verifyAdmin, async (req, res) => {
 // Delete material
 router.delete('/materials/:id', verifyAdmin, async (req, res) => {
   try {
-    const material = await Material.findById(req.params.id);
+    const material = await Material.findByIdAndDelete(req.params.id);
 
     if (!material) {
       return res.status(404).json({
@@ -421,29 +444,6 @@ router.delete('/materials/:id', verifyAdmin, async (req, res) => {
         message: 'Material not found'
       });
     }
-
-    // Delete from Cloudinary if it's a cloud URL
-    if (material.pdfUrl && material.pdfUrl.startsWith('http')) {
-      try {
-        const { cloudinary } = require('../middleware/upload');
-        // Extract public_id from Cloudinary URL
-        // URL format: https://res.cloudinary.com/cloud/raw/upload/v123/scholarstock/pdfs/filename.pdf
-        const urlParts = material.pdfUrl.split('/');
-        const uploadIndex = urlParts.indexOf('upload');
-        if (uploadIndex !== -1) {
-          // public_id is everything after /upload/vXXXXX/
-          const afterUpload = urlParts.slice(uploadIndex + 2).join('/');
-          const publicId = afterUpload.replace(/\.[^/.]+$/, ''); // remove extension
-          await cloudinary.uploader.destroy(publicId, { resource_type: 'raw' });
-          console.log('[DELETE] Deleted from Cloudinary:', publicId);
-        }
-      } catch (cloudErr) {
-        console.error('[DELETE] Cloudinary delete failed:', cloudErr.message);
-        // Continue anyway — still delete from MongoDB
-      }
-    }
-
-    await Material.findByIdAndDelete(req.params.id);
 
     // Also delete related rentals
     await Rental.deleteMany({ materialId: req.params.id });
