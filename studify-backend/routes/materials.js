@@ -263,23 +263,11 @@ router.get('/:id/stream', async (req, res) => {
       }
     }
 
-    // ── If pdfUrl is a Cloudinary / cloud URL → proxy it through backend ──
+    // ── If pdfUrl is a Cloudinary / cloud URL → redirect directly ──
     if (material.pdfUrl && (material.pdfUrl.startsWith('http://') || material.pdfUrl.startsWith('https://'))) {
-      try {
-        const axios = require('axios');
-        const response = await axios.get(material.pdfUrl, {
-          responseType: 'stream',
-          timeout: 30000,
-        });
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${material.title}.pdf"`);
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        response.data.pipe(res);
-        return;
-      } catch(e) {
-        console.error('[STREAM] Cloudinary fetch error:', e.message);
-        return res.status(500).json({ success: false, message: 'Failed to fetch PDF from cloud storage' });
-      }
+      // For Cloudinary raw files, direct redirect works best
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      return res.redirect(material.pdfUrl);
     }
 
     // ── Legacy: local file (will not work on Render after redeploy) ──
