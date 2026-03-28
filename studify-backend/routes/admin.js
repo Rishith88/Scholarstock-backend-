@@ -359,15 +359,16 @@ router.post('/materials', verifyAdmin, upload.single('pdf'), async (req, res) =>
       return res.status(400).json({ success: false, message: 'Category is required' });
     }
 
-    // Upload to Cloudinary as image type (publicly accessible)
+    // Upload to Cloudinary
     const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
+          upload_preset: 'SCHOLARSTOCK',
           folder: 'scholarstock/pdfs',
-          resource_type: 'image',
-          format: 'pdf',
+          resource_type: 'raw',
+          type: 'upload',
           access_mode: 'public',
-          public_id: Date.now() + '_' + req.file.originalname.replace(/[^a-zA-Z0-9]/g, '_'),
+          public_id: Date.now() + '_' + req.file.originalname.replace(/[^a-zA-Z0-9]/g, '_').replace(/_pdf$/i, '') + '.pdf',
         },
         (error, result) => {
           if (error) { console.error('Cloudinary error:', error); reject(error); }
