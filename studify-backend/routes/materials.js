@@ -265,10 +265,24 @@ router.get('/:id/stream', async (req, res) => {
 
     // ── If pdfUrl is a Cloudinary / cloud URL ──
     if (material.pdfUrl && (material.pdfUrl.startsWith('http://') || material.pdfUrl.startsWith('https://'))) {
+      // Fix Cloudinary raw URL — replace raw/upload with image/upload
+      let serveUrl = material.pdfUrl.replace('/raw/upload/', '/image/upload/');
       const https = require('https');
       const http = require('http');
-      const client = material.pdfUrl.startsWith('https') ? https : http;
-      client.get(material.pdfUrl, (cloudRes) => {
+      const client = serveUrl.startsWith('https') ? https : http;
+      client.get(serveUrl, (cloudRes) => {
+        // If redirect, follow it
+        if (cloudRes.statusCode === 301 || cloudRes.statusCode === 302) {
+          const redirectUrl = cloudRes.headers.location;
+          const rc = redirectUrl.startsWith('https') ? https : http;
+          rc.get(redirectUrl, (r2) => {
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `inline; filename="${material.title}.pdf"`);
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            r2.pipe(res);
+          });
+          return;
+        }
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="${material.title}.pdf"`);
         res.setHeader('Access-Control-Allow-Origin', '*');
