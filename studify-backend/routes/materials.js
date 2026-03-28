@@ -263,35 +263,9 @@ router.get('/:id/stream', async (req, res) => {
       }
     }
 
-    // ── If pdfUrl is a Cloudinary / cloud URL ──
+    // ── If pdfUrl is a Cloudinary / cloud URL → redirect directly ──
     if (material.pdfUrl && (material.pdfUrl.startsWith('http://') || material.pdfUrl.startsWith('https://'))) {
-      // Fix Cloudinary raw URL — replace raw/upload with image/upload
-      let serveUrl = material.pdfUrl.replace('/raw/upload/', '/image/upload/');
-      const https = require('https');
-      const http = require('http');
-      const client = serveUrl.startsWith('https') ? https : http;
-      client.get(serveUrl, (cloudRes) => {
-        // If redirect, follow it
-        if (cloudRes.statusCode === 301 || cloudRes.statusCode === 302) {
-          const redirectUrl = cloudRes.headers.location;
-          const rc = redirectUrl.startsWith('https') ? https : http;
-          rc.get(redirectUrl, (r2) => {
-            res.setHeader('Content-Type', 'application/pdf');
-            res.setHeader('Content-Disposition', `inline; filename="${material.title}.pdf"`);
-            res.setHeader('Access-Control-Allow-Origin', '*');
-            r2.pipe(res);
-          });
-          return;
-        }
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${material.title}.pdf"`);
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        cloudRes.pipe(res);
-      }).on('error', (e) => {
-        console.error('[STREAM] Cloud fetch error:', e.message);
-        res.status(500).json({ success: false, message: 'Failed to fetch PDF' });
-      });
-      return;
+      return res.redirect(302, material.pdfUrl);
     }
 
     // ── Legacy: local file (will not work on Render after redeploy) ──
