@@ -18,7 +18,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Memory storage — upload buffer directly to Cloudinary
+// Memory storage
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
@@ -359,14 +359,15 @@ router.post('/materials', verifyAdmin, upload.single('pdf'), async (req, res) =>
       return res.status(400).json({ success: false, message: 'Category is required' });
     }
 
-    // Upload buffer directly to Cloudinary
+    // Upload to Cloudinary as image type (publicly accessible)
     const uploadResult = await new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
         {
           folder: 'scholarstock/pdfs',
-          resource_type: 'raw',
+          resource_type: 'image',
+          format: 'pdf',
+          access_mode: 'public',
           public_id: Date.now() + '_' + req.file.originalname.replace(/[^a-zA-Z0-9]/g, '_'),
-          format: 'pdf'
         },
         (error, result) => {
           if (error) { console.error('Cloudinary error:', error); reject(error); }
@@ -376,7 +377,8 @@ router.post('/materials', verifyAdmin, upload.single('pdf'), async (req, res) =>
       stream.end(req.file.buffer);
     });
 
-    console.log('✅ Uploaded to Cloudinary:', uploadResult.secure_url);
+    const pdfUrl = uploadResult.secure_url;
+    console.log('✅ Uploaded to Cloudinary:', pdfUrl);
 
     const material = new Material({
       title:        req.body.title,
@@ -387,7 +389,7 @@ router.post('/materials', verifyAdmin, upload.single('pdf'), async (req, res) =>
       pricePerDay:  parseFloat(price) || 0,
       type:         req.body.type || 'PDF',
       pages:        parseInt(req.body.pages) || 1,
-      pdfUrl:       uploadResult.secure_url,
+      pdfUrl:       pdfUrl,
       isActive:     true,
     });
 
