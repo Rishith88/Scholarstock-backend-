@@ -6,19 +6,12 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const cloudinary = require('cloudinary').v2;
+const https = require('https');
 const User = require('../models/User');
 const Material = require('../models/Material');
 const Rental = require('../models/Rental');
 
-// Configure Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key:    process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
-
-// Memory storage
+// Memory storage — buffer uploaded to Supabase
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 },
@@ -27,6 +20,44 @@ const upload = multer({
     else cb(new Error('Only PDF files are allowed'));
   }
 });
+
+// Upload to Supabase Storage
+async function uploadToSupabase(buffer, filename) {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+  const bucket = 'pdfs';
+  const filePath = Date.now() + '_' + filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+  return new Promise((resolve, reject) => {
+    const url = new URL(`${supabaseUrl}/storage/v1/object/${bucket}/${filePath}`);
+    const options = {
+      hostname: url.hostname,
+      path: url.pathname,
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${supabaseKey}`,
+        'Content-Type': 'application/pdf',
+        'Content-Length': buffer.length,
+        'x-upsert': 'true'
+      }
+    };
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        if (res.statusCode === 200 || res.statusCode === 201) {
+          const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${filePath}`;
+          resolve(publicUrl);
+        } else {
+          reject(new Error(`Supabase upload failed: ${res.statusCode} - ${data}`));
+        }
+      });
+    });
+    req.on('error', reject);
+    req.write(buffer);
+    req.end();
+  });
+}
 
 // Get credentials from .env
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
@@ -359,27 +390,9 @@ router.post('/materials', verifyAdmin, upload.single('pdf'), async (req, res) =>
       return res.status(400).json({ success: false, message: 'Category is required' });
     }
 
-    // Upload to Cloudinary
-    const uploadResult = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        {
-          upload_preset: 'SCHOLARSTOCK',
-          folder: 'scholarstock/pdfs',
-          resource_type: 'raw',
-          type: 'upload',
-          access_mode: 'public',
-          public_id: Date.now() + '_' + req.file.originalname.replace(/[^a-zA-Z0-9]/g, '_').replace(/_pdf$/i, '') + '.pdf',
-        },
-        (error, result) => {
-          if (error) { console.error('Cloudinary error:', error); reject(error); }
-          else resolve(result);
-        }
-      );
-      stream.end(req.file.buffer);
-    });
-
-    const pdfUrl = uploadResult.secure_url;
-    console.log('✅ Uploaded to Cloudinary:', pdfUrl);
+    // Upload to Supabase Storage
+    const pdfUrl = await uploadToSupabase(req.file.buffer, req.file.originalname);
+    console.log('✅ Uploaded to Supabase:', pdfUrl);
 
     const material = new Material({
       title:        req.body.title,
