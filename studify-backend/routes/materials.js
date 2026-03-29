@@ -263,9 +263,33 @@ router.get('/:id/stream', async (req, res) => {
       }
     }
 
-    // ── If pdfUrl is a Cloudinary / cloud URL → redirect directly ──
+    // ── If pdfUrl is a cloud URL (Supabase/Cloudinary) → proxy it ──
     if (material.pdfUrl && (material.pdfUrl.startsWith('http://') || material.pdfUrl.startsWith('https://'))) {
-      return res.redirect(302, material.pdfUrl);
+      const https = require('https');
+      const http = require('http');
+      const client = material.pdfUrl.startsWith('https') ? https : http;
+      client.get(material.pdfUrl, (cloudRes) => {
+        // Follow redirects
+        if (cloudRes.statusCode === 301 || cloudRes.statusCode === 302) {
+          const loc = cloudRes.headers.location;
+          const rc = loc.startsWith('https') ? https : http;
+          rc.get(loc, (r2) => {
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `inline; filename="${material.title}.pdf"`);
+            res.setHeader('Access-Control-Allow-Origin', '*');
+            r2.pipe(res);
+          }).on('error', (e) => res.status(500).json({ success: false, message: e.message }));
+          return;
+        }
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${material.title}.pdf"`);
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        cloudRes.pipe(res);
+      }).on('error', (e) => {
+        console.error('[STREAM] Error:', e.message);
+        res.status(500).json({ success: false, message: 'Failed to fetch PDF' });
+      });
+      return;
     }
 
     // ── Legacy: local file (will not work on Render after redeploy) ──
