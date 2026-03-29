@@ -6,7 +6,6 @@ const jwt = require('jsonwebtoken');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const https = require('https');
 const User = require('../models/User');
 const Material = require('../models/Material');
 const Rental = require('../models/Rental');
@@ -21,42 +20,40 @@ const upload = multer({
   }
 });
 
-// Upload to Supabase Storage
+// Upload to Supabase Storage using axios
 async function uploadToSupabase(buffer, filename) {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
   const bucket = 'pdfs';
   const filePath = Date.now() + '_' + filename.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-  return new Promise((resolve, reject) => {
-    const url = new URL(`${supabaseUrl}/storage/v1/object/${bucket}/${filePath}`);
-    const options = {
-      hostname: url.hostname,
-      path: url.pathname,
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${supabaseKey}`,
-        'Content-Type': 'application/pdf',
-        'Content-Length': buffer.length,
-        'x-upsert': 'true'
+  const axios = require('axios');
+
+  try {
+    const response = await axios.post(
+      `${supabaseUrl}/storage/v1/object/${bucket}/${filePath}`,
+      buffer,
+      {
+        headers: {
+          'Authorization': `Bearer ${supabaseKey}`,
+          'Content-Type': 'application/pdf',
+          'x-upsert': 'true',
+          'Content-Length': buffer.length
+        },
+        maxBodyLength: Infinity,
+        maxContentLength: Infinity
       }
-    };
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', chunk => data += chunk);
-      res.on('end', () => {
-        if (res.statusCode === 200 || res.statusCode === 201) {
-          const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${filePath}`;
-          resolve(publicUrl);
-        } else {
-          reject(new Error(`Supabase upload failed: ${res.statusCode} - ${data}`));
-        }
-      });
-    });
-    req.on('error', reject);
-    req.write(buffer);
-    req.end();
-  });
+    );
+
+    const publicUrl = `${supabaseUrl}/storage/v1/object/public/${bucket}/${filePath}`;
+    console.log('[SUPABASE] Upload success:', publicUrl);
+    return publicUrl;
+
+  } catch (err) {
+    const errMsg = err.response ? JSON.stringify(err.response.data) : err.message;
+    console.error('[SUPABASE] Upload error:', errMsg);
+    throw new Error('Supabase upload failed: ' + errMsg);
+  }
 }
 
 // Get credentials from .env
