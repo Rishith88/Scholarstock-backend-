@@ -4,51 +4,12 @@ const express = require('express');
 const router = express.Router();
 const Material = require('../models/Material');
 const { auth } = require('../middleware/auth');
-const { upload, cloudinary } = require('../middleware/upload');
 
 // Helper function to check if material is free
 // ⭐ FREE = subcategory is "Free Resources"
 function isFreeResource(material) {
   return material.subcategory?.toLowerCase() === 'free resources';
 }
-
-// ── Upload PDF to Cloudinary ──
-// POST /api/materials/upload
-router.post('/upload', auth, upload.single('pdf'), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ success: false, message: 'No PDF file uploaded' });
-    }
-
-    // Cloudinary URL is in req.file.path
-    const pdfUrl = req.file.path;
-
-    const material = new Material({
-      title:        req.body.title        || req.file.originalname,
-      description:  req.body.description  || '',
-      examCategory: req.body.examCategory || '',
-      subcategory:  req.body.subcategory  || '',
-      type:         'PDF',
-      pages:        parseInt(req.body.pages) || 1,
-      pricePerDay:  parseFloat(req.body.pricePerDay) || 0,
-      pdfUrl,                         // ← Cloudinary URL stored here
-      uploadedBy:   req.user.userId,
-      isActive:     true,
-    });
-
-    await material.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'PDF uploaded to Cloudinary and material created',
-      material,
-      pdfUrl,
-    });
-  } catch (error) {
-    console.error('[UPLOAD] Error:', error.message);
-    res.status(500).json({ success: false, message: error.message });
-  }
-});
 
 // Get all materials with pagination and filters
 router.get('/', async (req, res) => {

@@ -410,7 +410,7 @@ router.post('/materials', verifyAdmin, upload.single('pdf'), async (req, res) =>
     await material.save();
     console.log('✅ Material saved:', material._id);
 
-    res.json({ success: true, message: 'Material uploaded to Cloudinary!', material });
+    res.json({ success: true, message: 'Material uploaded to Supabase!', material });
 
   } catch (error) {
     console.error('❌ Upload error:', error.message);
