@@ -1,24 +1,67 @@
 // routes/doubt.js
-// Mount in server.js: app.use('/api/doubt', require('./routes/doubt'));
-// Uses same GEMINI_API_KEY as chatbot and mocktest
+// Primary: Cerebras (llama-3.3-70b) — 1M tokens/day free
+// Fallback: Groq (llama-3.3-70b-versatile) — if Cerebras fails
 
 const express = require('express');
-const router  = express.Router(); 
+const router  = express.Router();
 const axios   = require('axios');
 
+// ── Call AI with Cerebras primary, Groq fallback ──
+async function callAI(prompt) {
+  const cerebrasKey = process.env.CEREBRAS_API_KEY;
+  const groqKey     = process.env.GROQ_API_KEY;
+
+  if (cerebrasKey) {
+    try {
+      console.log('[DOUBT] Trying Cerebras...');
+      const res = await axios.post(
+        'https://api.cerebras.ai/v1/chat/completions',
+        {
+          model: 'llama-3.3-70b',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.4,
+          max_tokens: 2048,
+        },
+        { headers: { 'Authorization': `Bearer ${cerebrasKey}`, 'Content-Type': 'application/json' } }
+      );
+      console.log('[DOUBT] Cerebras success');
+      return res.data.choices[0].message.content.trim();
+    } catch (err) {
+      console.warn('[DOUBT] Cerebras failed:', err.response?.data?.error?.message || err.message, '— trying Groq');
+    }
+  }
+
+  if (groqKey) {
+    try {
+      console.log('[DOUBT] Trying Groq fallback...');
+      const res = await axios.post(
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.4,
+          max_tokens: 2048,
+        },
+        { headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' } }
+      );
+      console.log('[DOUBT] Groq fallback success');
+      return res.data.choices[0].message.content.trim();
+    } catch (err) {
+      console.error('[DOUBT] Groq failed:', err.response?.data?.error?.message || err.message);
+      throw new Error('Both Cerebras and Groq failed. Please try again.');
+    }
+  }
+
+  throw new Error('No AI API key configured. Set CEREBRAS_API_KEY or GROQ_API_KEY.');
+}
+
 // POST /api/doubt/solve
-// Body: { question, examCategory, subcategory, material }
 router.post('/solve', async (req, res) => {
   try {
     const { question, examCategory, subcategory, material } = req.body;
 
     if (!question || !question.trim()) {
       return res.status(400).json({ success: false, message: 'Question is required' });
-    }
-
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({ success: false, message: 'Gemini API key not configured' });
     }
 
     const examCtx = examCategory || 'competitive exams';
@@ -44,16 +87,8 @@ Rules:
 - tip: one practical exam tip, max 1 sentence
 - Keep everything concise and exam-focused`;
 
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.4, maxOutputTokens: 2048 }
-      },
-      { headers: { 'Content-Type': 'application/json' } }
-    );
+    const raw = await callAI(prompt);
 
-    const raw = response.data.candidates[0].content.parts[0].text.trim();
     const startIdx = raw.indexOf('{');
     const endIdx   = raw.lastIndexOf('}');
     if (startIdx === -1 || endIdx === -1) {
@@ -65,10 +100,6 @@ Rules:
     res.json({ success: true, answer });
 
   } catch (err) {
-    if (err.response) {
-      console.error('[DOUBT] Gemini error:', err.response.status);
-      return res.status(500).json({ success: false, message: `AI error: ${err.response.data?.error?.message || 'Unknown'}` });
-    }
     console.error('[DOUBT] Error:', err.message);
     res.status(500).json({ success: false, message: err.message });
   }
