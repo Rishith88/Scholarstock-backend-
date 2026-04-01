@@ -20,7 +20,7 @@ async function callAI(prompt) {
           model: 'llama-3.3-70b',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.4,
-          max_tokens: 2048,
+          max_tokens: 8192,
         },
         { headers: { 'Authorization': `Bearer ${cerebrasKey}`, 'Content-Type': 'application/json' } }
       );
@@ -40,7 +40,7 @@ async function callAI(prompt) {
           model: 'llama-3.3-70b-versatile',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.4,
-          max_tokens: 2048,
+          max_tokens: 8192,
         },
         { headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' } }
       );
