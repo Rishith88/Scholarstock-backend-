@@ -1,43 +1,82 @@
 // routes/mocktest.js
-// Mount in server.js: app.use('/api/mocktest', require('./routes/mocktest'));
-// Uses same GEMINI_API_KEY as your chatbot — no new keys needed!
+// Primary: Cerebras (llama-3.3-70b) — 1M tokens/day free
+// Fallback: Groq (llama-3.3-70b-versatile) — if Cerebras fails
 
 const express = require('express');
 const router  = express.Router();
 const axios   = require('axios');
 
-// ── Helper: build a smart topic description from category + subcategory ──
 function buildTopicContext(category, subcategory) {
-  // If subcategory is "Free Resources", generate for the whole exam category
   if (subcategory === 'Free Resources' || subcategory === 'free-resources') {
     return {
       topic: category,
       context: `This is a comprehensive mock test covering the full syllabus of the ${category} exam. Include questions from all major subjects and topics tested in ${category}.`
     };
   }
-
-  // Otherwise combine both for full context
   return {
     topic: `${subcategory} for ${category}`,
-    context: `This is a mock test specifically for the "${subcategory}" subject/topic within the ${category} exam. Generate questions that are directly relevant to what is tested in ${subcategory} as part of ${category} preparation.`
+    context: `This is a mock test specifically for the "${subcategory}" subject/topic within the ${category} exam. Generate questions directly relevant to what is tested in ${subcategory} as part of ${category} preparation.`
   };
 }
 
+// ── Call AI with Cerebras primary, Groq fallback ──
+async function callAI(prompt) {
+  const cerebrasKey = process.env.CEREBRAS_API_KEY;
+  const groqKey     = process.env.GROQ_API_KEY;
+
+  // Try Cerebras first
+  if (cerebrasKey) {
+    try {
+      console.log('[MOCKTEST] Trying Cerebras...');
+      const res = await axios.post(
+        'https://api.cerebras.ai/v1/chat/completions',
+        {
+          model: 'llama-3.3-70b',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.6,
+          max_tokens: 8192,
+        },
+        { headers: { 'Authorization': `Bearer ${cerebrasKey}`, 'Content-Type': 'application/json' } }
+      );
+      console.log('[MOCKTEST] Cerebras success');
+      return res.data.choices[0].message.content.trim();
+    } catch (err) {
+      console.warn('[MOCKTEST] Cerebras failed:', err.response?.data?.error?.message || err.message, '— trying Groq fallback');
+    }
+  }
+
+  // Fallback to Groq
+  if (groqKey) {
+    try {
+      console.log('[MOCKTEST] Trying Groq fallback...');
+      const res = await axios.post(
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+          model: 'llama-3.3-70b-versatile',
+          messages: [{ role: 'user', content: prompt }],
+          temperature: 0.6,
+          max_tokens: 8192,
+        },
+        { headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' } }
+      );
+      console.log('[MOCKTEST] Groq fallback success');
+      return res.data.choices[0].message.content.trim();
+    } catch (err) {
+      console.error('[MOCKTEST] Groq fallback failed:', err.response?.data?.error?.message || err.message);
+      throw new Error('Both Cerebras and Groq failed. Please try again.');
+    }
+  }
+
+  throw new Error('No AI API key configured. Set CEREBRAS_API_KEY or GROQ_API_KEY.');
+}
+
 // POST /api/mocktest/generate
-// Body: { category, subcategory, qCount, difficulty, qType }
 router.post('/generate', async (req, res) => {
   try {
     const { category, subcategory, qCount = 10, difficulty = 'medium', qType = 'mcq' } = req.body;
 
     if (!category || !subcategory) {
       return res.status(400).json({ success: false, message: 'Category and subcategory required' });
-    }
-
-    // Check API key exists
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      console.error('[MOCKTEST] GEMINI_API_KEY is not set in environment variables');
-      return res.status(500).json({ success: false, message: 'Gemini API key not configured on server' });
     }
 
     console.log('[MOCKTEST] Generating', qCount, 'questions for', category, '-', subcategory);
@@ -50,9 +89,9 @@ router.post('/generate', async (req, res) => {
       'mixed (some MCQ with 4 options, some true/false)';
 
     const difficultyDesc =
-      difficulty === 'easy'   ? 'easy — suitable for beginners, basic concept questions' :
-      difficulty === 'hard'   ? 'hard — advanced level, tricky and conceptual questions' :
-      difficulty === 'mixed'  ? 'mixed difficulty — a combination of easy, medium and hard questions' :
+      difficulty === 'easy'  ? 'easy — suitable for beginners, basic concept questions' :
+      difficulty === 'hard'  ? 'hard — advanced level, tricky and conceptual questions' :
+      difficulty === 'mixed' ? 'mixed difficulty — a combination of easy, medium and hard questions' :
       'medium — moderate difficulty, standard exam level questions';
 
     const prompt = `You are an expert question paper setter for competitive exams in India and worldwide.
@@ -65,17 +104,12 @@ Your task: Generate exactly ${qCount} ${questionTypeDesc} questions.
 Difficulty level: ${difficultyDesc}
 
 STRICT RULES:
-1. Every question MUST be about actual exam content for "${topic}" — real concepts, formulas, facts, theorems, laws, dates, or problems that appear in ${category} exams
+1. Every question MUST be about actual exam content for "${topic}" — real concepts, formulas, facts, theorems, laws, dates, or problems
 2. Do NOT generate questions about books, study materials, or how to prepare — generate ACTUAL subject questions
-3. Questions must test real knowledge — like what appears in the actual ${category} exam
-4. Each MCQ must have exactly 4 options labeled naturally (do not include A/B/C/D in the option text itself)
-5. Each true/false must have exactly 2 options: "True" and "False"
-6. The "correct" field must be the index (0, 1, 2, or 3 for MCQ — 0 for True, 1 for False)
-7. Include a clear, educational explanation for why the answer is correct
-
-EXAMPLES of good questions for JEE Mains — Physics:
-- "What is the SI unit of electric flux?" (not "Which book covers electric flux?")
-- "A ball is thrown vertically upward with velocity 20 m/s. What is the maximum height reached?" (not "Which chapter covers projectile motion?")
+3. Each MCQ must have exactly 4 options (do not include A/B/C/D in the option text)
+4. Each true/false must have exactly 2 options: "True" and "False"
+5. The "correct" field must be the index (0-3 for MCQ, 0 for True, 1 for False)
+6. Include a clear educational explanation for why the answer is correct
 
 Respond ONLY with a valid JSON array. No markdown, no code fences, no extra text:
 [
@@ -87,36 +121,20 @@ Respond ONLY with a valid JSON array. No markdown, no code fences, no extra text
     "explanation": "Clear explanation of why this answer is correct"
   }
 ]
-For true/false questions use type "tf", options must be exactly ["True", "False"], correct is 0 for True or 1 for False.`;
+For true/false use type "tf", options must be exactly ["True", "False"], correct is 0 for True or 1 for False.`;
 
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-      {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          temperature: 0.6,
-          maxOutputTokens: 8192,
-        }
-      },
-      {
-        headers: { 'Content-Type': 'application/json' }
-      }
-    );
+    const raw = await callAI(prompt);
 
-    // Extract text from Gemini response
-    const raw = response.data.candidates[0].content.parts[0].text.trim();
-
-    // Robustly extract JSON array — find first [ and last ] in response
+    // Robustly extract JSON array
     const startIdx = raw.indexOf('[');
     const endIdx   = raw.lastIndexOf(']');
 
-    if(startIdx === -1 || endIdx === -1 || endIdx < startIdx){
-      console.error('[MOCKTEST] No JSON array found in response:', raw.substring(0, 200));
-      return res.status(500).json({ success: false, message: 'Gemini did not return valid JSON. Try again.' });
+    if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) {
+      console.error('[MOCKTEST] No JSON array found:', raw.substring(0, 200));
+      return res.status(500).json({ success: false, message: 'AI did not return valid JSON. Try again.' });
     }
 
-    const clean = raw.substring(startIdx, endIdx + 1);
-    const questions = JSON.parse(clean);
+    const questions = JSON.parse(raw.substring(startIdx, endIdx + 1));
 
     if (!Array.isArray(questions) || questions.length === 0) {
       return res.status(500).json({ success: false, message: 'Invalid questions generated' });
@@ -126,13 +144,6 @@ For true/false questions use type "tf", options must be exactly ["True", "False"
     res.json({ success: true, questions });
 
   } catch (err) {
-    if (err.response) {
-      console.error('[MOCKTEST] Gemini API error:', err.response.status, JSON.stringify(err.response.data));
-      return res.status(500).json({
-        success: false,
-        message: `Gemini API error ${err.response.status}: ${err.response.data?.error?.message || 'Unknown error'}`
-      });
-    }
     console.error('[MOCKTEST] Error:', err.message);
     res.status(500).json({ success: false, message: err.message });
   }
