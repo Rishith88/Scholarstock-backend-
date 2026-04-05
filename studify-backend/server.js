@@ -46,9 +46,8 @@ app.use('/api/doubt', require('./routes/doubt'));
 // ⭐ NEW ROUTES FOR PRICING SYSTEM
 app.use('/api/pricing-plans', require('./routes/pricingPlans'));
 app.use('/api/cart', require('./routes/cart'));
+app.use('/api/study-strategist', require('./routes/studyPlanner'));
 
-// ⭐ MOCK TEST GENERATOR (Claude AI)
-app.use('/api/mocktest', require('./routes/mocktest'));
 
 // Health check
 app.get('/health', (req, res) => {
