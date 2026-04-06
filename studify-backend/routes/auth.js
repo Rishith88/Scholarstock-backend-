@@ -1,13 +1,11 @@
-// Additional auth endpoints to be added to existing auth.js
-// These are the missing endpoints for forgot-password, reset-password, and verify-email
-
 const express = require('express');
+const router = express.Router();
 const crypto = require('crypto');
 const User = require('../models/User');
 const { generateToken } = require('../middleware/auth');
 
 // POST /api/auth/forgot-password
-exports.forgotPassword = async (req, res) => {
+router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -20,7 +18,6 @@ exports.forgotPassword = async (req, res) => {
 
     const user = await User.findOne({ email: email.toLowerCase() });
     
-    // Don't reveal if user exists for security
     if (!user) {
       return res.json({
         success: true,
@@ -28,16 +25,13 @@ exports.forgotPassword = async (req, res) => {
       });
     }
 
-    // Generate reset token
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenExpiry = Date.now() + 3600000; // 1 hour
+    const resetTokenExpiry = Date.now() + 3600000;
 
     user.resetPasswordToken = resetToken;
     user.resetPasswordExpires = resetTokenExpiry;
     await user.save();
 
-    // In production, send email here
-    // For now, just return success
     console.log(`Password reset token for ${email}: ${resetToken}`);
 
     res.json({
@@ -51,10 +45,10 @@ exports.forgotPassword = async (req, res) => {
       message: 'Server error'
     });
   }
-};
+});
 
 // POST /api/auth/reset-password
-exports.resetPassword = async (req, res) => {
+router.post('/reset-password', async (req, res) => {
   try {
     const { token, password } = req.body;
 
@@ -84,8 +78,7 @@ exports.resetPassword = async (req, res) => {
       });
     }
 
-    // Update password
-    user.password = password; // Will be hashed by pre-save hook
+    user.password = password;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
     await user.save();
@@ -101,10 +94,10 @@ exports.resetPassword = async (req, res) => {
       message: 'Server error'
     });
   }
-};
+});
 
 // POST /api/auth/verify-email
-exports.verifyEmail = async (req, res) => {
+router.post('/verify-email', async (req, res) => {
   try {
     const { token } = req.body;
 
@@ -143,11 +136,6 @@ exports.verifyEmail = async (req, res) => {
       message: 'Server error'
     });
   }
-};
+});
 
-// Add these fields to User model if not present:
-// resetPasswordToken: String
-// resetPasswordExpires: Date
-// emailVerificationToken: String
-// emailVerificationExpires: Date
-// isEmailVerified: { type: Boolean, default: false }
+module.exports = router;
