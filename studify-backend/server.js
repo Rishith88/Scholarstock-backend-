@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 // Database connection
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/scholarstock', {
+    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/scholarstock', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
