@@ -45,7 +45,7 @@ app.use('/api/referral', require('./routes/referral'));
 // NEW AI Routes - These were missing
 app.use('/api/chatbot', require('./routes/chatbot'));
 app.use('/api/doubt', require('./routes/doubt'));
-app.use('/api/study-Planner', require('./routes/studyPlanner'));
+app.use('/api/study-strategist', require('./routes/studyPlanner'));
 app.use('/api/calculator', require('./routes/calculator'));
 app.use('/api/mocktest', require('./routes/mocktest'));
 
