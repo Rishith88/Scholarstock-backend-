@@ -77,3 +77,5 @@ exports.verifyAdmin = (req, res, next) => {
   }
   next();
 };
+// Alias for backward compatibility
+exports.auth = exports.verifyToken;

@@ -1,121 +1,90 @@
-// studify-backend/server.js - UPDATED WITH PRICING & CART
-
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const path = require('path');
-require('dotenv').config();
+const dotenv = require('dotenv');
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors({
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  credentials: true
+}));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Serve PDF files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// MongoDB Connection
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => {
-  console.log('✅ MongoDB Connected');
-})
-.catch(err => {
-  console.error('❌ MongoDB Connection Error:', err.message);
-});
+// Database connection
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/scholarstock', {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    });
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+    
+    // Initialize default pricing plans
+    const PricingPlan = require('./models/PricingPlan');
+    await PricingPlan.initializeDefaultPlans();
+  } catch (error) {
+    console.error(`Error: ${error.message}`);
+    process.exit(1);
+  }
+};
 
 // Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users'));
 app.use('/api/materials', require('./routes/materials'));
-app.use('/api/rentals', require('./routes/rentals'));
-app.use('/api/admin', require('./routes/admin'));
-app.use('/api/payments', require('./routes/payments'));
-app.use('/api/chatbot', require('./routes/chatbot'));
-app.use('/api/founder', require('./routes/founder'));
 app.use('/api/categories', require('./routes/categories'));
-app.use('/api/referral', require('./routes/referral'));
-app.use('/api/referral-settings', require('./routes/referralSettings'));
-app.use('/api/settings', require('./routes/settings'));
-app.use('/api/mocktest', require('./routes/mocktest'));
-app.use('/api/doubt', require('./routes/doubt'));
-app.use('/api/calculator', require('./routes/calculator'));
-
-// ⭐ NEW ROUTES FOR PRICING SYSTEM
-app.use('/api/pricing-plans', require('./routes/pricingPlans'));
 app.use('/api/cart', require('./routes/cart'));
-app.use('/api/study-strategist', require('./routes/studyPlanner'));
+app.use('/api/orders', require('./routes/orders'));
+app.use('/api/rentals', require('./routes/rentals'));
+app.use('/api/referral', require('./routes/referral'));
+app.use('/api/wishlist', require('./routes/wishlist'));
+app.use('/api/pricing', require('./routes/pricing'));
 
+// NEW AI Routes - These were missing
+app.use('/api/chatbot', require('./routes/chatbot'));
+app.use('/api/doubt', require('./routes/doubt'));
+app.use('/api/study-strategist', require('./routes/studyStrategist'));
+app.use('/api/calculator', require('./routes/calculator'));
+app.use('/api/mocktest', require('./routes/mocktest'));
 
-// Health check
-app.get('/health', (req, res) => {
+// Health check endpoint
+app.get('/api/health', (req, res) => {
   res.json({ 
-    status: 'OK', 
-    timestamp: new Date().toISOString(),
-    mongodb: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
-    features: [
-      'Authentication',
-      'Materials',
-      'Rentals',
-      'Admin Panel',
-      'Payments',
-      'Chatbot',
-      'Pricing Plans (20 plans)', // NEW
-      'Shopping Cart', // NEW
-      'Study Planner'  // NEW
-    ]
-  });
-});
-
-// Root route
-app.get('/', (req, res) => {
-  res.json({ 
-    message: 'Studify Backend API', 
-    version: '3.0',
-    newFeatures: [
-      '20 Dynamic Pricing Plans',
-      'Shopping Cart System',
-      'Multi-level Pricing (Global/Exam/Subcategory)'
-    ]
+    success: true, 
+    message: 'ScholarStock API is running',
+    timestamp: new Date().toISOString()
   });
 });
 
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ 
-    success: false,
-    message: 'Endpoint not found',
-    requestedUrl: req.originalUrl
+    success: false, 
+    message: 'Route not found' 
   });
 });
 
-// Error handling
+// Error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
+  console.error(err.stack);
   res.status(500).json({ 
-    success: false,
-    message: 'Something went wrong!', 
-    error: process.env.NODE_ENV === 'development' ? err.message : 'Internal server error'
+    success: false, 
+    message: 'Internal server error',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`\n🚀 Studify Backend Server v3.0`);
-  console.log(`📡 Running on: http://localhost:${PORT}`);
-  console.log(`💾 MongoDB: ${mongoose.connection.readyState === 1 ? '✅ Connected' : '⏳ Connecting...'}`);
-  console.log(`\n📚 Endpoints:`);
-  console.log(`   - Auth:           /api/auth`);
-  console.log(`   - Materials:      /api/materials`);
-  console.log(`   - Rentals:        /api/rentals`);
-  console.log(`   - Admin:          /api/admin`);
-  console.log(`   - Pricing Plans:  /api/pricing-plans`);
-  console.log(`   - Cart:           /api/cart`);
-  console.log(`   - Mock Test:      /api/mocktest ⭐ NEW`);
-  console.log(`\n🔧 Health Check: http://localhost:${PORT}/health\n`);
-});
 
-module.exports = app;
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  });
+});

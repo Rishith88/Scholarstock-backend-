@@ -1,253 +1,153 @@
+// Additional auth endpoints to be added to existing auth.js
+// These are the missing endpoints for forgot-password, reset-password, and verify-email
+
 const express = require('express');
-const router = express.Router();
-const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const User = require('../models/User');
+const { generateToken } = require('../middleware/auth');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'studify_super_secret_jwt_key_2024_change_in_production';
-
-// ==========================================
-// REGISTER
-// ==========================================
-router.post('/register', async (req, res) => {
+// POST /api/auth/forgot-password
+exports.forgotPassword = async (req, res) => {
   try {
-    const { name, email, password, username, referredByUsername } = req.body;
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email is required'
+      });
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
     
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: 'Name, email and password required' });
-    }
-
-    // Check if email already exists
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ success: false, message: 'Email already registered' });
-    }
-
-    // Check if username already exists (if provided)
-    if (username) {
-      const existingUsername = await User.findOne({ username });
-      if (existingUsername) {
-        return res.status(400).json({ success: false, message: 'Username already taken' });
-      }
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    // Handle referral
-    let referrer = null;
-    if (referredByUsername) {
-      referrer = await User.findOne({ username: referredByUsername });
-      if (referrer) {
-        referrer.referralCount += 1;
-        await referrer.save();
-      }
-    }
-
-    // Create user
-    const user = new User({
-      name,
-      email,
-      password: hashedPassword,
-      username: username || undefined,
-      referredByUsername: referredByUsername || null,
-      referredBy: referrer ? referrer._id : null
-    });
-
-    await user.save();
-
-    // Generate token
-    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '30d' });
-
-    res.json({
-      success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        username: user.username
-      }
-    });
-  } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ success: false, message: 'Registration failed: ' + error.message });
-  }
-});
-
-// ==========================================
-// LOGIN
-// ==========================================
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ success: false, message: 'Email and password required' });
-    }
-
-    const user = await User.findOne({ email });
+    // Don't reveal if user exists for security
     if (!user) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      return res.json({
+        success: true,
+        message: 'If an account exists, a reset link has been sent'
+      });
     }
 
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
-      return res.status(401).json({ success: false, message: 'Invalid credentials' });
-    }
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = Date.now() + 3600000; // 1 hour
 
-    // Update last login
-    user.lastLogin = new Date();
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = resetTokenExpiry;
     await user.save();
 
-    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '30d' });
+    // In production, send email here
+    // For now, just return success
+    console.log(`Password reset token for ${email}: ${resetToken}`);
 
     res.json({
       success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        username: user.username,
-        referralBalance: user.referralBalance,
-        referralCount: user.referralCount
-      }
+      message: 'If an account exists, a reset link has been sent'
     });
   } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ success: false, message: 'Login failed' });
+    console.error('Forgot password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
-});
+};
 
-// ==========================================
-// VERIFY TOKEN
-// ==========================================
-router.get('/verify', async (req, res) => {
+// POST /api/auth/reset-password
+exports.resetPassword = async (req, res) => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Token and password are required'
+      });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be at least 6 characters'
+      });
+    }
+
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired reset token'
+      });
+    }
+
+    // Update password
+    user.password = password; // Will be hashed by pre-save hook
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+
+    res.json({
+      success: true,
+      message: 'Password reset successful'
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
+// POST /api/auth/verify-email
+exports.verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.body;
+
     if (!token) {
-      return res.status(401).json({ success: false, message: 'No token provided' });
+      return res.status(400).json({
+        success: false,
+        message: 'Verification token is required'
+      });
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.userId).select('-password');
-
-    if (!user) {
-      return res.status(401).json({ success: false, message: 'User not found' });
-    }
-
-    res.json({
-      success: true,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        username: user.username,
-        referralBalance: user.referralBalance,
-        referralCount: user.referralCount
-      }
-    });
-  } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid token' });
-  }
-});
-
-// ==========================================
-// GET USER PROFILE
-// ==========================================
-router.get('/profile', async (req, res) => {
-  try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    if (!token) {
-      return res.status(401).json({ success: false, message: 'No token' });
-    }
-
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.userId).select('-password');
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    res.json({ success: true, user });
-  } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid token' });
-  }
-});
-
-
-// /signup is same as /register (frontend compatibility)
-router.post('/signup', async (req, res) => {
-  try {
-    const { name, email, password, username, referredByUsername } = req.body;
-    
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: 'Name, email and password required' });
-    }
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ success: false, message: 'Email already registered' });
-    }
-
-    if (username) {
-      const existingUsername = await User.findOne({ username });
-      if (existingUsername) {
-        return res.status(400).json({ success: false, message: 'Username already taken' });
-      }
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    
-    let referrer = null;
-    if (referredByUsername) {
-      referrer = await User.findOne({ username: referredByUsername.toLowerCase().trim() });
-    }
-
-    const user = new User({
-      name,
-      email,
-      password: hashedPassword,
-      username: username || undefined,
-      referredByUsername: referredByUsername || null,
-      referredBy: referrer ? referrer._id : null
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() }
     });
 
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid or expired verification token'
+      });
+    }
+
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
     await user.save();
 
-    const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '30d' });
-
     res.json({
       success: true,
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        username: user.username,
-        referralBalance: user.referralBalance || 0,
-        createdAt: user.createdAt
-      }
+      message: 'Email verified successfully'
     });
   } catch (error) {
-    console.error('Signup error:', error);
-    res.status(500).json({ success: false, message: 'Signup failed: ' + error.message });
+    console.error('Verify email error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
   }
-});
+};
 
-// Check username availability
-router.post('/check-username', async (req, res) => {
-  try {
-    const { username } = req.body;
-    if (!username) return res.status(400).json({ success: false, message: 'Username required' });
-    const exists = await User.findOne({ username: username.toLowerCase().trim() });
-    res.json({ success: true, available: !exists });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Server error' });
-  }
-});
-
-module.exports = router;
-
+// Add these fields to User model if not present:
+// resetPasswordToken: String
+// resetPasswordExpires: Date
+// emailVerificationToken: String
+// emailVerificationExpires: Date
+// isEmailVerified: { type: Boolean, default: false }
