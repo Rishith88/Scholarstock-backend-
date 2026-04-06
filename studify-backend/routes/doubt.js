@@ -1,108 +1,109 @@
-// routes/doubt.js
-// Primary: Cerebras (llama-3.3-70b) — 1M tokens/day free
-// Fallback: Groq (llama-3.3-70b-versatile) — if Cerebras fails
-
 const express = require('express');
-const router  = express.Router();
-const axios   = require('axios');
+const router = express.Router();
+const { verifyToken, optionalAuth } = require('../middleware/auth');
 
-// ── Call AI with Cerebras primary, Groq fallback ──
-async function callAI(prompt) {
-  const cerebrasKey = process.env.CEREBRAS_API_KEY;
-  const groqKey     = process.env.GROQ_API_KEY;
-
-  if (cerebrasKey) {
-    try {
-      console.log('[DOUBT] Trying Cerebras...');
-      const res = await axios.post(
-        'https://api.cerebras.ai/v1/chat/completions',
-        {
-          model: 'llama-3.3-70b',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.4,
-          max_tokens: 8192,
-        },
-        { headers: { 'Authorization': `Bearer ${cerebrasKey}`, 'Content-Type': 'application/json' } }
-      );
-      console.log('[DOUBT] Cerebras success');
-      return res.data.choices[0].message.content.trim();
-    } catch (err) {
-      console.warn('[DOUBT] Cerebras failed:', err.response?.data?.error?.message || err.message, '— trying Groq');
-    }
-  }
-
-  if (groqKey) {
-    try {
-      console.log('[DOUBT] Trying Groq fallback...');
-      const res = await axios.post(
-        'https://api.groq.com/openai/v1/chat/completions',
-        {
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.4,
-          max_tokens: 8192,
-        },
-        { headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' } }
-      );
-      console.log('[DOUBT] Groq fallback success');
-      return res.data.choices[0].message.content.trim();
-    } catch (err) {
-      console.error('[DOUBT] Groq failed:', err.response?.data?.error?.message || err.message);
-      throw new Error('Both Cerebras and Groq failed. Please try again.');
-    }
-  }
-
-  throw new Error('No AI API key configured. Set CEREBRAS_API_KEY or GROQ_API_KEY.');
-}
-
-// POST /api/doubt/solve
-router.post('/solve', async (req, res) => {
+// POST /api/doubt/solve - AI Doubt Solver endpoint
+router.post('/solve', optionalAuth, async (req, res) => {
   try {
     const { question, examCategory, subcategory, material } = req.body;
-
-    if (!question || !question.trim()) {
-      return res.status(400).json({ success: false, message: 'Question is required' });
+    
+    if (!question || typeof question !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Question is required'
+      });
     }
 
-    const examCtx = examCategory || 'competitive exams';
-    const subCtx  = subcategory  || 'general topics';
+    // Generate contextual response based on exam category and subcategory
+    const answer = generateDoubtResponse(question, examCategory, subcategory, material);
 
-    const prompt = `You are an expert AI tutor for ${examCtx} — specifically ${subCtx}.
-A student needs help understanding a concept or solving a problem.
-${material ? `Context: The student is reading "${material}".` : ''}
-
-Student question: ${question}
-
-Respond ONLY with valid JSON, no markdown, no extra text:
-{
-  "explanation": "Clear main explanation in 2-4 sentences",
-  "steps": ["Step 1: ...", "Step 2: ...", "Step 3: ..."],
-  "relatedTopics": ["Topic 1", "Topic 2", "Topic 3"],
-  "tip": "One quick exam tip"
-}
-
-Rules:
-- For math/physics/chemistry: show actual formulas and calculations in steps
-- relatedTopics: exactly 3 short topic names to study next
-- tip: one practical exam tip, max 1 sentence
-- Keep everything concise and exam-focused`;
-
-    const raw = await callAI(prompt);
-
-    const startIdx = raw.indexOf('{');
-    const endIdx   = raw.lastIndexOf('}');
-    if (startIdx === -1 || endIdx === -1) {
-      return res.status(500).json({ success: false, message: 'Invalid AI response' });
-    }
-
-    const answer = JSON.parse(raw.substring(startIdx, endIdx + 1));
-    console.log('[DOUBT] Solved for', examCtx, '-', subCtx);
-    res.json({ success: true, answer });
-
-  } catch (err) {
-    console.error('[DOUBT] Error:', err.message);
-    res.status(500).json({ success: false, message: err.message });
+    res.json({
+      success: true,
+      answer: JSON.stringify(answer)
+    });
+  } catch (error) {
+    console.error('Doubt solver error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Doubt solver temporarily unavailable'
+    });
   }
 });
+
+function generateDoubtResponse(question, examCategory, subcategory, material) {
+  const lowerQuestion = question.toLowerCase();
+  
+  // Check for common question patterns
+  const isConceptual = lowerQuestion.includes('what is') || lowerQuestion.includes('define') || lowerQuestion.includes('explain');
+  const isNumerical = /\d+/.test(question) && (lowerQuestion.includes('find') || lowerQuestion.includes('calculate') || lowerQuestion.includes('solve'));
+  const isFormula = lowerQuestion.includes('formula') || lowerQuestion.includes('equation');
+  
+  const response = {
+    explanation: '',
+    steps: [],
+    tip: ''
+  };
+
+  // Generate contextual explanation
+  if (examCategory && subcategory) {
+    response.explanation = `Based on your question about ${subcategory} in ${examCategory}:\n\n${question}\n\n`;
+  } else {
+    response.explanation = `Regarding your question:\n\n${question}\n\n`;
+  }
+
+  if (isNumerical) {
+    response.explanation += "This appears to be a numerical problem. Here's how to approach it:";
+    response.steps = [
+      "Identify the given values and what needs to be found",
+      "Recall the relevant formula or concept",
+      "Substitute the values carefully",
+      "Solve step by step, checking units at each stage",
+      "Verify your answer makes physical/mathematical sense"
+    ];
+  } else if (isConceptual) {
+    response.explanation += "This is a conceptual question. Understanding the fundamentals is key:";
+    response.steps = [
+      "Break down the concept into simpler parts",
+      "Relate it to basic principles you already know",
+      "Look for real-world examples or analogies",
+      "Create a mental model or diagram if helpful",
+      "Practice explaining it in your own words"
+    ];
+  } else if (isFormula) {
+    response.explanation += "For formula-based questions:";
+    response.steps = [
+      "Write down the formula clearly",
+      "Understand what each variable represents",
+      "Check the units on both sides",
+      "Memorize the formula through practice problems",
+      "Learn the derivation for deeper understanding"
+    ];
+  } else {
+    response.explanation += "Here's a structured approach to solve this:";
+    response.steps = [
+      "Read the question carefully and identify key information",
+      "Determine the topic/concept being tested",
+      "Recall relevant theory, formulas, or methods",
+      "Plan your solution approach before starting",
+      "Execute step-by-step with clear reasoning"
+    ];
+  }
+
+  // Add exam-specific tip
+  if (examCategory) {
+    const tips = {
+      'JEE': 'Focus on time management. JEE problems often test multiple concepts together.',
+      'NEET': 'Remember: NEET emphasizes NCERT. Ensure your basics are strong.',
+      'UPSC': 'Think conceptually. UPSC tests application, not just memorization.',
+      'CAT': 'Look for shortcuts and patterns. Time is crucial in CAT.',
+      'GATE': 'Practice previous year questions. GATE has a predictable pattern.'
+    };
+    response.tip = tips[examCategory] || 'Practice regularly and review mistakes to improve.';
+  } else {
+    response.tip = 'Consistent practice and understanding concepts deeply leads to success.';
+  }
+
+  return response;
+}
 
 module.exports = router;
