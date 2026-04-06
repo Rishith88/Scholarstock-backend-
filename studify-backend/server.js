@@ -51,7 +51,7 @@ app.use('/api/referral-settings', require('./routes/referralSettings'));
 app.use('/api/chatbot', require('./routes/chatbot'));
 app.use('/api/doubt', require('./routes/doubt'));
 app.use('/api/study-strategist', require('./routes/studyPlanner'));
-app.use('/api/calculater', require('./routes/calculater'));
+app.use('/api/calculator', require('./routes/calculater')); // Note: file is spelled "calculater"
 app.use('/api/mocktest', require('./routes/mocktest'));
 
 // Pricing Plans
