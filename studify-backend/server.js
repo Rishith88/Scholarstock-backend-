@@ -24,10 +24,6 @@ const connectDB = async () => {
       useUnifiedTopology: true,
     });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
-    
-    // Initialize default pricing plans
-    const PricingPlan = require('./models/PricingPlan');
-    await PricingPlan.initializeDefaultPlans();
   } catch (error) {
     console.error(`Error: ${error.message}`);
     process.exit(1);
@@ -51,7 +47,7 @@ app.use('/api/referral-settings', require('./routes/referralSettings'));
 app.use('/api/chatbot', require('./routes/chatbot'));
 app.use('/api/doubt', require('./routes/doubt'));
 app.use('/api/study-strategist', require('./routes/studyPlanner'));
-app.use('/api/calculator', require('./routes/calculater')); // Note: file is spelled "calculater"
+app.use('/api/calculator', require('./routes/calculater'));
 app.use('/api/mocktest', require('./routes/mocktest'));
 
 // Pricing Plans
@@ -90,5 +86,11 @@ connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    
+    // Initialize pricing plans AFTER server starts and DB is connected
+    const PricingPlan = require('./models/PricingPlan');
+    PricingPlan.initializeDefaultPlans().catch(err => {
+      console.error('Error initializing pricing plans:', err.message);
+    });
   });
 });
