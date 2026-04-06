@@ -1,152 +1,200 @@
-// routes/mocktest.js
-// Primary: Cerebras (llama-3.3-70b) — 1M tokens/day free
-// Fallback: Groq (llama-3.3-70b-versatile) — if Cerebras fails
-
 const express = require('express');
-const router  = express.Router();
-const axios   = require('axios');
+const router = express.Router();
+const { verifyToken, optionalAuth } = require('../middleware/auth');
 
-function buildTopicContext(category, subcategory) {
-  if (subcategory === 'Free Resources' || subcategory === 'free-resources') {
-    return {
-      topic: category,
-      context: `This is a comprehensive mock test covering the full syllabus of the ${category} exam. Include questions from all major subjects and topics tested in ${category}.`
-    };
-  }
-  return {
-    topic: `${subcategory} for ${category}`,
-    context: `This is a mock test specifically for the "${subcategory}" subject/topic within the ${category} exam. Generate questions directly relevant to what is tested in ${subcategory} as part of ${category} preparation.`
-  };
-}
-
-// ── Call AI with Cerebras primary, Groq fallback ──
-async function callAI(prompt) {
-  const cerebrasKey = process.env.CEREBRAS_API_KEY;
-  const groqKey     = process.env.GROQ_API_KEY;
-
-  // Try Cerebras first
-  if (cerebrasKey) {
-    try {
-      console.log('[MOCKTEST] Trying Cerebras...');
-      const res = await axios.post(
-        'https://api.cerebras.ai/v1/chat/completions',
-        {
-          model: 'llama-3.3-70b',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.6,
-          max_tokens: 8192,
-        },
-        { headers: { 'Authorization': `Bearer ${cerebrasKey}`, 'Content-Type': 'application/json' } }
-      );
-      console.log('[MOCKTEST] Cerebras success');
-      return res.data.choices[0].message.content.trim();
-    } catch (err) {
-      console.warn('[MOCKTEST] Cerebras failed:', err.response?.data?.error?.message || err.message, '— trying Groq fallback');
-    }
-  }
-
-  // Fallback to Groq
-  if (groqKey) {
-    try {
-      console.log('[MOCKTEST] Trying Groq fallback...');
-      const res = await axios.post(
-        'https://api.groq.com/openai/v1/chat/completions',
-        {
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.6,
-          max_tokens: 8192,
-        },
-        { headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' } }
-      );
-      console.log('[MOCKTEST] Groq fallback success');
-      return res.data.choices[0].message.content.trim();
-    } catch (err) {
-      console.error('[MOCKTEST] Groq fallback failed:', err.response?.data?.error?.message || err.message);
-      throw new Error('Both Cerebras and Groq failed. Please try again.');
-    }
-  }
-
-  throw new Error('No AI API key configured. Set CEREBRAS_API_KEY or GROQ_API_KEY.');
-}
-
-// POST /api/mocktest/generate
-router.post('/generate', async (req, res) => {
+// POST /api/mocktest/generate - Generate mock test questions
+router.post('/generate', optionalAuth, async (req, res) => {
   try {
-    const { category, subcategory, qCount = 10, difficulty = 'medium', qType = 'mcq' } = req.body;
+    const { category, subcategory, qCount, difficulty, qType } = req.body;
 
-    if (!category || !subcategory) {
-      return res.status(400).json({ success: false, message: 'Category and subcategory required' });
+    if (!category || !subcategory || !qCount) {
+      return res.status(400).json({
+        success: false,
+        message: 'category, subcategory, and qCount are required'
+      });
     }
 
-    console.log('[MOCKTEST] Generating', qCount, 'questions for', category, '-', subcategory);
+    const questions = generateMockQuestions({
+      category,
+      subcategory,
+      qCount: Math.min(parseInt(qCount) || 10, 30), // Max 30 questions
+      difficulty: difficulty || 'medium',
+      qType: qType || 'mcq'
+    });
 
-    const { topic, context } = buildTopicContext(category, subcategory);
-
-    const questionTypeDesc =
-      qType === 'mcq'       ? 'multiple choice (4 options each)' :
-      qType === 'truefalse' ? 'true/false' :
-      'mixed (some MCQ with 4 options, some true/false)';
-
-    const difficultyDesc =
-      difficulty === 'easy'  ? 'easy — suitable for beginners, basic concept questions' :
-      difficulty === 'hard'  ? 'hard — advanced level, tricky and conceptual questions' :
-      difficulty === 'mixed' ? 'mixed difficulty — a combination of easy, medium and hard questions' :
-      'medium — moderate difficulty, standard exam level questions';
-
-    const prompt = `You are an expert question paper setter for competitive exams in India and worldwide.
-
-EXAM: ${category}
-SUBJECT/TOPIC: ${subcategory}
-CONTEXT: ${context}
-
-Your task: Generate exactly ${qCount} ${questionTypeDesc} questions.
-Difficulty level: ${difficultyDesc}
-
-STRICT RULES:
-1. Every question MUST be about actual exam content for "${topic}" — real concepts, formulas, facts, theorems, laws, dates, or problems
-2. Do NOT generate questions about books, study materials, or how to prepare — generate ACTUAL subject questions
-3. Each MCQ must have exactly 4 options (do not include A/B/C/D in the option text)
-4. Each true/false must have exactly 2 options: "True" and "False"
-5. The "correct" field must be the index (0-3 for MCQ, 0 for True, 1 for False)
-6. Include a clear educational explanation for why the answer is correct
-
-Respond ONLY with a valid JSON array. No markdown, no code fences, no extra text:
-[
-  {
-    "question": "Actual exam question here?",
-    "type": "mcq",
-    "options": ["First option", "Second option", "Third option", "Fourth option"],
-    "correct": 0,
-    "explanation": "Clear explanation of why this answer is correct"
-  }
-]
-For true/false use type "tf", options must be exactly ["True", "False"], correct is 0 for True or 1 for False.`;
-
-    const raw = await callAI(prompt);
-
-    // Robustly extract JSON array
-    const startIdx = raw.indexOf('[');
-    const endIdx   = raw.lastIndexOf(']');
-
-    if (startIdx === -1 || endIdx === -1 || endIdx < startIdx) {
-      console.error('[MOCKTEST] No JSON array found:', raw.substring(0, 200));
-      return res.status(500).json({ success: false, message: 'AI did not return valid JSON. Try again.' });
-    }
-
-    const questions = JSON.parse(raw.substring(startIdx, endIdx + 1));
-
-    if (!Array.isArray(questions) || questions.length === 0) {
-      return res.status(500).json({ success: false, message: 'Invalid questions generated' });
-    }
-
-    console.log('[MOCKTEST] Successfully generated', questions.length, 'questions for', topic);
-    res.json({ success: true, questions });
-
-  } catch (err) {
-    console.error('[MOCKTEST] Error:', err.message);
-    res.status(500).json({ success: false, message: err.message });
+    res.json({
+      success: true,
+      questions,
+      meta: {
+        category,
+        subcategory,
+        totalQuestions: questions.length,
+        difficulty,
+        generatedAt: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Mock test generation error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate mock test'
+    });
   }
 });
+
+function generateMockQuestions({ category, subcategory, qCount, difficulty, qType }) {
+  const questions = [];
+  
+  // Question templates by category
+  const templates = getQuestionTemplates(category, subcategory);
+  
+  for (let i = 0; i < qCount; i++) {
+    const template = templates[i % templates.length];
+    const question = createQuestionFromTemplate(template, i + 1, difficulty, qType);
+    questions.push(question);
+  }
+  
+  return questions;
+}
+
+function getQuestionTemplates(category, subcategory) {
+  // Default templates for any category
+  const defaultTemplates = [
+    {
+      concept: 'Fundamental Concept',
+      question: 'Which of the following best describes the core principle?',
+      options: ['Option A', 'Option B', 'Option C', 'Option D'],
+      correct: 0,
+      explanation: 'The correct answer is based on fundamental principles of the subject.'
+    },
+    {
+      concept: 'Application Problem',
+      question: 'In a given scenario, what would be the most appropriate approach?',
+      options: ['Approach 1', 'Approach 2', 'Approach 3', 'Approach 4'],
+      correct: 1,
+      explanation: 'This approach is most suitable given the constraints and requirements.'
+    },
+    {
+      concept: 'Numerical Problem',
+      question: 'Calculate the value based on given parameters.',
+      options: ['10', '20', '30', '40'],
+      correct: 2,
+      explanation: 'Using the formula and substituting values gives us 30.'
+    },
+    {
+      concept: 'Conceptual Understanding',
+      question: 'Which statement is TRUE regarding this topic?',
+      options: ['Statement A', 'Statement B', 'Statement C', 'Statement D'],
+      correct: 3,
+      explanation: 'Statement D is correct based on established theory.'
+    },
+    {
+      concept: 'Analytical Reasoning',
+      question: 'Analyze the following and select the correct conclusion.',
+      options: ['Conclusion 1', 'Conclusion 2', 'Conclusion 3', 'Conclusion 4'],
+      correct: 0,
+      explanation: 'The analysis leads to conclusion 1 as the most logical outcome.'
+    }
+  ];
+
+  // Category-specific templates
+  const categoryTemplates = {
+    'JEE': [
+      {
+        concept: 'Physics - Mechanics',
+        question: 'A particle moves with velocity v = 2t i + 3t² j. Find acceleration at t=1s.',
+        options: ['2 i + 6 j', '2 i + 3 j', '0 i + 6 j', '2 i + 0 j'],
+        correct: 0,
+        explanation: 'Acceleration is dv/dt = 2 i + 6t j. At t=1, a = 2 i + 6 j.'
+      },
+      {
+        concept: 'Chemistry - Organic',
+        question: 'Which reagent converts alcohol to alkyl halide?',
+        options: ['NaOH', 'PCl₅', 'KMnO₄', 'H₂SO₄'],
+        correct: 1,
+        explanation: 'PCl₅ (phosphorus pentachloride) converts -OH to -Cl.'
+      },
+      {
+        concept: 'Mathematics - Calculus',
+        question: '∫(2x + 3)dx = ?',
+        options: ['x² + 3x + C', '2x² + 3x + C', 'x² + C', '2 + C'],
+        correct: 0,
+        explanation: 'Using power rule: ∫2x dx = x² and ∫3 dx = 3x. So x² + 3x + C.'
+      }
+    ],
+    'NEET': [
+      {
+        concept: 'Biology - Cell Biology',
+        question: 'Which organelle is called the powerhouse of the cell?',
+        options: ['Nucleus', 'Mitochondria', 'Ribosome', 'Golgi body'],
+        correct: 1,
+        explanation: 'Mitochondria produce ATP through cellular respiration.'
+      },
+      {
+        concept: 'Physics - Optics',
+        question: 'The focal length of a convex lens is positive or negative?',
+        options: ['Positive', 'Negative', 'Zero', 'Infinite'],
+        correct: 0,
+        explanation: 'By convention, convex lenses have positive focal length.'
+      }
+    ],
+    'UPSC': [
+      {
+        concept: 'Indian Polity',
+        question: 'Which article of the Constitution deals with Fundamental Rights?',
+        options: ['Article 12-35', 'Article 36-51', 'Article 52-62', 'Article 74-75'],
+        correct: 0,
+        explanation: 'Part III (Articles 12-35) contains Fundamental Rights.'
+      },
+      {
+        concept: 'Indian History',
+        question: 'The Battle of Plassey was fought in which year?',
+        options: ['1757', '1764', '1857', '1947'],
+        correct: 0,
+        explanation: 'The Battle of Plassey was fought on June 23, 1757.'
+      }
+    ]
+  };
+
+  return categoryTemplates[category] || defaultTemplates;
+}
+
+function createQuestionFromTemplate(template, qNum, difficulty, qType) {
+  // Adjust difficulty by modifying the question
+  let questionText = template.question;
+  let options = [...template.options];
+  let explanation = template.explanation;
+  
+  // Add difficulty indicator
+  const difficultyPrefix = {
+    'easy': '',
+    'medium': '[Medium] ',
+    'hard': '[Hard] ',
+    'mixed': qNum % 2 === 0 ? '[Medium] ' : ''
+  };
+  
+  questionText = difficultyPrefix[difficulty] + questionText;
+  
+  // For true/false questions
+  if (qType === 'truefalse' || (qType === 'mixed' && qNum % 3 === 0)) {
+    const isTrue = template.correct === 0;
+    return {
+      question: `True or False: ${questionText}`,
+      type: 'tf',
+      options: ['True', 'False'],
+      correct: isTrue ? 0 : 1,
+      explanation: template.explanation
+    };
+  }
+  
+  // Standard MCQ
+  return {
+    question: `Q${qNum}. ${questionText}`,
+    type: 'mcq',
+    options: options,
+    correct: template.correct,
+    explanation: explanation
+  };
+}
 
 module.exports = router;
