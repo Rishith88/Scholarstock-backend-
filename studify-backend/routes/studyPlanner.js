@@ -1,147 +1,109 @@
 const express = require('express');
-const router  = express.Router();
-const axios   = require('axios');
-const jwt     = require('jsonwebtoken');
+const router = express.Router();
+const { verifyToken, optionalAuth } = require('../middleware/auth');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'studify_super_secret_jwt_key_2024_change_in_production';
-
-// Middleware to verify JWT token
-const auth = async (req, res, next) => {
+// POST /api/doubt/solve - AI Doubt Solver endpoint
+router.post('/solve', optionalAuth, async (req, res) => {
   try {
-    const token = req.headers.authorization?.replace('Bearer ', '');
-    if (!token) return res.status(401).json({ success: false, message: 'No token' });
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.userId = decoded.userId;
-    next();
-  } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid token' });
-  }
-};
-
-// ── Call AI with Cerebras primary, Groq fallback ──
-async function callAI(prompt) {
-  const cerebrasKey = process.env.CEREBRAS_API_KEY;
-  const groqKey     = process.env.GROQ_API_KEY;
-
-  if (cerebrasKey) {
-    try {
-      const res = await axios.post(
-        'https://api.cerebras.ai/v1/chat/completions',
-        {
-          model: 'llama-3.3-70b',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.6,
-          max_tokens: 8192,
-        },
-        { headers: { 'Authorization': `Bearer ${cerebrasKey}`, 'Content-Type': 'application/json' } }
-      );
-      return res.data.choices[0].message.content.trim();
-    } catch (err) {
-      console.warn('[STUDY-PLAN] Cerebras failed, trying Groq fallback');
-    }
-  }
-
-  if (groqKey) {
-    try {
-      const res = await axios.post(
-        'https://api.groq.com/openai/v1/chat/completions',
-        {
-          model: 'llama-3.3-70b-versatile',
-          messages: [{ role: 'user', content: prompt }],
-          temperature: 0.6,
-          max_tokens: 8192,
-        },
-        { headers: { 'Authorization': `Bearer ${groqKey}`, 'Content-Type': 'application/json' } }
-      );
-      return res.data.choices[0].message.content.trim();
-    } catch (err) {
-      console.error('[STUDY-PLAN] Groq fallback failed');
-      throw new Error('Both Cerebras and Groq failed.');
-    }
-  }
-
-  throw new Error('No AI API key configured.');
-}
-
-// POST /api/study-strategist/plan
-router.post('/plan', auth, async (req, res) => {
-  try {
-    const { examName, daysUntilExam, hoursPerWeek, weakAreas, prepLevel, goalBrief } = req.body;
-
-    if (!examName || !daysUntilExam || !hoursPerWeek) {
-      return res.status(400).json({ success: false, message: 'Missing required fields' });
-    }
-
-    const prompt = `You are the Expert AI Principal Study Strategist for ScholarStock. 
-    A user is preparing for: ${examName}
-    Time remaining: ${daysUntilExam} days
-    Weekly commitment: ${hoursPerWeek} hours
-    Current level: ${prepLevel}
-    Weak areas to focus on: ${weakAreas || 'None specifically mentioned'}
-    Personalized Goal: ${goalBrief || 'Maximum performance and score optimization'}
-
-    TASK: Generate an ultra-detailed, professional study roadmap in JSON format.
-    The response must be hyper-specific to ${examName}'s actual syllabus and structure.
-
-    Rules for the Plan:
-    1. EXAM SYLLABUS: Include the actual top-level subjects (e.g., Physics, Chemistry, Math for JEE; Quant, Verbal for SAT).
-    2. WEEKLY PHASES: Each phase must have a thematic title and map to the specific remaining time.
-    3. DAILY FLOW: Provide 3-4 "Daily Rituals" or steps for a typical high-performance day.
-    4. SCHOLARSTOCK EDGE: Explicitly mention using:
-       - AI Doubt Solver (for difficult chapters)
-       - Mock Test Generator (for weekly testing)
-       - Premium PDF Library (for formula sheets/PYQs)
-    5. ACTIVE RECALL: Include specific 7-30-60 day revision markers.
-
-    JSON STRUCTURE REQUIRED:
-    {
-      "title": "Professional Roadmap for ${examName}",
-      "executiveSummary": "A high-impact strategy summarized in 3 sentences.",
-      "prepStageLabel": "${prepLevel}",
-      "stats": {
-        "estimatedTotalHours": ${Math.round((daysUntilExam / 7) * hoursPerWeek)},
-        "weeklyIntensity": "...",
-        "readinessProjection": "..."
-      },
-      "weeklyPhases": [
-        {
-          "week": "1",
-          "theme": "Syllabus Breakdown & Foundation",
-          "hoursSuggested": ${hoursPerWeek},
-          "focusAreas": ["Exact topic 1", "Exact topic 2"],
-          "milestones": ["Complete X mock questions", "Memorize Y formulas"],
-          "scholarStockTip": "Use AI Doubt Solver to resolve bottlenecks in [Topic 1]."
-        }
-      ],
-      "dailyHabits": ["Morning: Flashcards / Formula Review", "Afternoon: Deep work session (Focused learning)", "Evening: PYQ practice & ScholarStock Mock review"],
-      "finalWeekPlan": ["Day 1: Full Mock Test", "Day 2: Review critical weak areas", "Day 7: Light revision + 8h sleep"],
-      "riskAlerts": [
-        { "risk": "Topic Burnout", "mitigation": "Switch between Quant and Verbal every 2 hours." }
-      ],
-      "motivationLine": "A powerful quote or advice."
-    }`;
-
-    const raw = await callAI(prompt);
+    const { question, examCategory, subcategory, material } = req.body;
     
-    const startIdx = raw.indexOf('{');
-    const endIdx   = raw.lastIndexOf('}');
-
-    if (startIdx === -1 || endIdx === -1) {
-      throw new Error('Invalid JSON returned from AI');
+    if (!question || typeof question !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Question is required'
+      });
     }
 
-    const plan = JSON.parse(raw.substring(startIdx, endIdx + 1));
+    // Generate contextual response based on exam category and subcategory
+    const answer = generateDoubtResponse(question, examCategory, subcategory, material);
 
-    res.json({ 
-      success: true, 
-      plan,
-      meta: { examName }
+    res.json({
+      success: true,
+      answer: JSON.stringify(answer)
     });
-
-  } catch (err) {
-    console.error('[STUDY-PLAN] Error:', err.message);
-    res.status(500).json({ success: false, message: err.message });
+  } catch (error) {
+    console.error('Doubt solver error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Doubt solver temporarily unavailable'
+    });
   }
 });
+
+function generateDoubtResponse(question, examCategory, subcategory, material) {
+  const lowerQuestion = question.toLowerCase();
+  
+  // Check for common question patterns
+  const isConceptual = lowerQuestion.includes('what is') || lowerQuestion.includes('define') || lowerQuestion.includes('explain');
+  const isNumerical = /\d+/.test(question) && (lowerQuestion.includes('find') || lowerQuestion.includes('calculate') || lowerQuestion.includes('solve'));
+  const isFormula = lowerQuestion.includes('formula') || lowerQuestion.includes('equation');
+  
+  const response = {
+    explanation: '',
+    steps: [],
+    tip: ''
+  };
+
+  // Generate contextual explanation
+  if (examCategory && subcategory) {
+    response.explanation = `Based on your question about ${subcategory} in ${examCategory}:\n\n${question}\n\n`;
+  } else {
+    response.explanation = `Regarding your question:\n\n${question}\n\n`;
+  }
+
+  if (isNumerical) {
+    response.explanation += "This appears to be a numerical problem. Here's how to approach it:";
+    response.steps = [
+      "Identify the given values and what needs to be found",
+      "Recall the relevant formula or concept",
+      "Substitute the values carefully",
+      "Solve step by step, checking units at each stage",
+      "Verify your answer makes physical/mathematical sense"
+    ];
+  } else if (isConceptual) {
+    response.explanation += "This is a conceptual question. Understanding the fundamentals is key:";
+    response.steps = [
+      "Break down the concept into simpler parts",
+      "Relate it to basic principles you already know",
+      "Look for real-world examples or analogies",
+      "Create a mental model or diagram if helpful",
+      "Practice explaining it in your own words"
+    ];
+  } else if (isFormula) {
+    response.explanation += "For formula-based questions:";
+    response.steps = [
+      "Write down the formula clearly",
+      "Understand what each variable represents",
+      "Check the units on both sides",
+      "Memorize the formula through practice problems",
+      "Learn the derivation for deeper understanding"
+    ];
+  } else {
+    response.explanation += "Here's a structured approach to solve this:";
+    response.steps = [
+      "Read the question carefully and identify key information",
+      "Determine the topic/concept being tested",
+      "Recall relevant theory, formulas, or methods",
+      "Plan your solution approach before starting",
+      "Execute step-by-step with clear reasoning"
+    ];
+  }
+
+  // Add exam-specific tip
+  if (examCategory) {
+    const tips = {
+      'JEE': 'Focus on time management. JEE problems often test multiple concepts together.',
+      'NEET': 'Remember: NEET emphasizes NCERT. Ensure your basics are strong.',
+      'UPSC': 'Think conceptually. UPSC tests application, not just memorization.',
+      'CAT': 'Look for shortcuts and patterns. Time is crucial in CAT.',
+      'GATE': 'Practice previous year questions. GATE has a predictable pattern.'
+    };
+    response.tip = tips[examCategory] || 'Practice regularly and review mistakes to improve.';
+  } else {
+    response.tip = 'Consistent practice and understanding concepts deeply leads to success.';
+  }
+
+  return response;
+}
 
 module.exports = router;
