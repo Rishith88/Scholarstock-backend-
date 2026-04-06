@@ -34,20 +34,28 @@ const connectDB = async () => {
   }
 };
 
-// Routes
+// Routes - ONLY EXISTING ROUTE FILES
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/materials', require('./routes/materials'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/cart', require('./routes/cart'));
 app.use('/api/rentals', require('./routes/rentals'));
 app.use('/api/referral', require('./routes/referral'));
+app.use('/api/admin', require('./routes/admin'));
+app.use('/api/payments', require('./routes/payments'));
+app.use('/api/founder', require('./routes/founder'));
+app.use('/api/settings', require('./routes/settings'));
+app.use('/api/referral-settings', require('./routes/referralSettings'));
 
-// NEW AI Routes - These were missing
+// AI Routes
 app.use('/api/chatbot', require('./routes/chatbot'));
 app.use('/api/doubt', require('./routes/doubt'));
 app.use('/api/study-strategist', require('./routes/studyPlanner'));
 app.use('/api/calculator', require('./routes/calculator'));
 app.use('/api/mocktest', require('./routes/mocktest'));
+
+// Pricing Plans
+app.use('/api/pricing-plans', require('./routes/pricingPlans'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
