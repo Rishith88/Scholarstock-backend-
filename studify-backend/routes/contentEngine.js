@@ -142,52 +142,8 @@ class AIProviderPool {
         quality: 'tier1'
       },
       
-      // ==================== GROQ (FREE - Ultra Fast) ====================
-      // Verified 2026: 1000 req/day (70B models), 14400 req/day (8B models)
-      {
-        name: 'groq-llama3.3-70b',
-        type: 'groq',
-        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-        key: process.env.GROQ_API_KEY,
-        model: 'llama-3.3-70b-versatile',
-        usage: 0,
-        limit: 1000, // 30 RPM, 1000 req/day
-        enabled: !!process.env.GROQ_API_KEY,
-        quality: 'tier1'
-      },
-      {
-        name: 'groq-llama4-scout',
-        type: 'groq',
-        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-        key: process.env.GROQ_API_KEY,
-        model: 'llama-4-scout-17b-16e-instruct',
-        usage: 0,
-        limit: 1000,
-        enabled: !!process.env.GROQ_API_KEY,
-        quality: 'tier1'
-      },
-      {
-        name: 'groq-qwen3-32b',
-        type: 'groq',
-        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-        key: process.env.GROQ_API_KEY,
-        model: 'qwen-3-32b',
-        usage: 0,
-        limit: 1000,
-        enabled: !!process.env.GROQ_API_KEY,
-        quality: 'tier1'
-      },
-      {
-        name: 'groq-kimi-k2',
-        type: 'groq',
-        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
-        key: process.env.GROQ_API_KEY,
-        model: 'kimi-k2-0905',
-        usage: 0,
-        limit: 1000,
-        enabled: !!process.env.GROQ_API_KEY,
-        quality: 'tier1'
-      },
+      // ⚠️ GROQ & CEREBRAS EXCLUDED - Reserved for main features (chatbot, doubt, mock tests)
+      // Do NOT add content engine load to these primary providers
       
       // ==================== HUGGINGFACE (High-Quality Models) ====================
       {
@@ -329,56 +285,6 @@ class AIProviderPool {
         usage: 0,
         limit: 100,
         enabled: !!process.env.NVIDIA_API_KEY,
-        quality: 'tier1'
-      },
-      
-      // ==================== CLOUDFLARE WORKERS AI (FREE) ====================
-      // Verified 2026: 10K neurons/day
-      {
-        name: 'cloudflare-llama3.2',
-        type: 'cloudflare',
-        endpoint: 'https://api.cloudflare.com/client/v4/accounts/',
-        key: process.env.CLOUDFLARE_API_TOKEN,
-        model: '@cf/meta/llama-3.2-3b-instruct',
-        usage: 0,
-        limit: 500, // 10K neurons/day
-        enabled: !!process.env.CLOUDFLARE_API_TOKEN,
-        quality: 'tier2'
-      },
-      {
-        name: 'cloudflare-mistral-7b',
-        type: 'cloudflare',
-        endpoint: 'https://api.cloudflare.com/client/v4/accounts/',
-        key: process.env.CLOUDFLARE_API_TOKEN,
-        model: '@hf/thebloke/mistral-7b-instruct-v0.1-awq',
-        usage: 0,
-        limit: 500,
-        enabled: !!process.env.CLOUDFLARE_API_TOKEN,
-        quality: 'tier2'
-      },
-      
-      // ==================== XAI/GROK (FREE CREDITS) ====================
-      // Verified 2026: $25 signup credits
-      {
-        name: 'xai-grok-3',
-        type: 'xai',
-        endpoint: 'https://api.x.ai/v1/chat/completions',
-        key: process.env.XAI_API_KEY,
-        model: 'grok-3',
-        usage: 0,
-        limit: 100, // $25 free credits
-        enabled: !!process.env.XAI_API_KEY,
-        quality: 'tier1'
-      },
-      {
-        name: 'xai-grok-3-fast',
-        type: 'xai',
-        endpoint: 'https://api.x.ai/v1/chat/completions',
-        key: process.env.XAI_API_KEY,
-        model: 'grok-3-fast',
-        usage: 0,
-        limit: 100,
-        enabled: !!process.env.XAI_API_KEY,
         quality: 'tier1'
       },
       
@@ -560,17 +466,6 @@ class AIProviderPool {
         usage: 0,
         limit: 100,
         enabled: !!process.env.MISTRAL_API_KEY,
-        quality: 'tier1'
-      },
-      {
-        name: 'cohere-command',
-        type: 'cohere',
-        endpoint: 'https://api.cohere.ai/v1/chat',
-        key: process.env.COHERE_API_KEY,
-        model: 'command-r-plus',
-        usage: 0,
-        limit: 100,
-        enabled: !!process.env.COHERE_API_KEY,
         quality: 'tier1'
       },
       {
@@ -952,21 +847,6 @@ Generate content as JSON:
         });
         
         return parseContent(response.data.candidates[0].content.parts[0].text, index);
-        
-      case 'cohere':
-        response = await axios.post(provider.endpoint, {
-          model: provider.model,
-          message: prompt,
-          max_tokens: 2000,
-          temperature: 0.7
-        }, {
-          headers: {
-            'Authorization': `Bearer ${provider.key}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        return parseContent(response.data.text, index);
         
       case 'ai21':
         response = await axios.post(`${provider.endpoint}${provider.model}/complete`, {
