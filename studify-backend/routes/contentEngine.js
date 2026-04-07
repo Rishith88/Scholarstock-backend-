@@ -1,0 +1,827 @@
+const express = require('express');
+const router = express.Router();
+const { auth, verifyAdmin } = require('../middleware/auth');
+const axios = require('axios');
+
+// AI Provider Pool - HIGH QUALITY MODELS ONLY (Tier 1 & 2)
+class AIProviderPool {
+  constructor() {
+    this.providers = [
+      // ==================== OPENROUTER (FREE High-Quality Models) ====================
+      { 
+        name: 'openrouter-llama70b', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'meta-llama/llama-3.1-70b-instruct:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-mixtral8x22b', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'mistralai/mixtral-8x22b-instruct:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-qwen72b', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'qwen/qwen-2.5-72b-instruct:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-hermes70b', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'nousresearch/hermes-3-llama-3.1-70b:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-gemini-flash', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'google/gemini-2.0-flash-exp:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-llama8b', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'meta-llama/llama-3.1-8b-instruct:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier2'
+      },
+      { 
+        name: 'openrouter-mistral7b', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'mistralai/mistral-7b-instruct:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier2'
+      },
+      { 
+        name: 'openrouter-qwen7b', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'qwen/qwen-2.5-7b-instruct:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier2'
+      },
+      
+      // ==================== HUGGINGFACE (High-Quality Models) ====================
+      {
+        name: 'huggingface-llama70b',
+        type: 'huggingface',
+        endpoint: 'https://api-inference.huggingface.co/models/',
+        key: process.env.HUGGINGFACE_API_KEY,
+        model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
+        usage: 0,
+        limit: 500,
+        enabled: !!process.env.HUGGINGFACE_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'huggingface-mixtral8x7b',
+        type: 'huggingface',
+        endpoint: 'https://api-inference.huggingface.co/models/',
+        key: process.env.HUGGINGFACE_API_KEY,
+        model: 'mistralai/Mixtral-8x7B-Instruct-v0.1',
+        usage: 0,
+        limit: 500,
+        enabled: !!process.env.HUGGINGFACE_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'huggingface-qwen72b',
+        type: 'huggingface',
+        endpoint: 'https://api-inference.huggingface.co/models/',
+        key: process.env.HUGGINGFACE_API_KEY,
+        model: 'Qwen/Qwen2.5-72B-Instruct',
+        usage: 0,
+        limit: 500,
+        enabled: !!process.env.HUGGINGFACE_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'huggingface-mistral-large',
+        type: 'huggingface',
+        endpoint: 'https://api-inference.huggingface.co/models/',
+        key: process.env.HUGGINGFACE_API_KEY,
+        model: 'mistralai/Mistral-Large-Instruct-2407',
+        usage: 0,
+        limit: 500,
+        enabled: !!process.env.HUGGINGFACE_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'huggingface-codellama70b',
+        type: 'huggingface',
+        endpoint: 'https://api-inference.huggingface.co/models/',
+        key: process.env.HUGGINGFACE_API_KEY,
+        model: 'codellama/CodeLlama-70b-Instruct-hf',
+        usage: 0,
+        limit: 500,
+        enabled: !!process.env.HUGGINGFACE_API_KEY,
+        quality: 'tier2'
+      },
+      
+      // ==================== TOGETHER AI (High-Quality Models) ====================
+      {
+        name: 'together-llama70b',
+        type: 'together',
+        endpoint: 'https://api.together.xyz/v1/chat/completions',
+        key: process.env.TOGETHER_API_KEY,
+        model: 'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.TOGETHER_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'together-mixtral8x22b',
+        type: 'together',
+        endpoint: 'https://api.together.xyz/v1/chat/completions',
+        key: process.env.TOGETHER_API_KEY,
+        model: 'mistralai/Mixtral-8x22B-Instruct-v0.1',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.TOGETHER_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'together-qwen72b',
+        type: 'together',
+        endpoint: 'https://api.together.xyz/v1/chat/completions',
+        key: process.env.TOGETHER_API_KEY,
+        model: 'Qwen/Qwen2.5-72B-Instruct-Turbo',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.TOGETHER_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'together-dbrx',
+        type: 'together',
+        endpoint: 'https://api.together.xyz/v1/chat/completions',
+        key: process.env.TOGETHER_API_KEY,
+        model: 'databricks/dbrx-instruct',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.TOGETHER_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'together-deepseek-llm67b',
+        type: 'together',
+        endpoint: 'https://api.together.xyz/v1/chat/completions',
+        key: process.env.TOGETHER_API_KEY,
+        model: 'deepseek-ai/deepseek-llm-67b-chat',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.TOGETHER_API_KEY,
+        quality: 'tier2'
+      },
+      
+      // ==================== INDIVIDUAL APIs (High-Quality) ====================
+      {
+        name: 'gemini-pro',
+        type: 'gemini',
+        endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/',
+        key: process.env.GEMINI_API_KEY,
+        model: 'gemini-2.0-flash',
+        usage: 0,
+        limit: 60,
+        enabled: !!process.env.GEMINI_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'gemini-pro-1.5',
+        type: 'gemini',
+        endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/',
+        key: process.env.GEMINI_API_KEY,
+        model: 'gemini-1.5-pro',
+        usage: 0,
+        limit: 60,
+        enabled: !!process.env.GEMINI_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'deepseek-chat',
+        type: 'deepseek',
+        endpoint: 'https://api.deepseek.com/v1/chat/completions',
+        key: process.env.DEEPSEEK_API_KEY,
+        model: 'deepseek-chat',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.DEEPSEEK_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'deepseek-coder',
+        type: 'deepseek',
+        endpoint: 'https://api.deepseek.com/v1/chat/completions',
+        key: process.env.DEEPSEEK_API_KEY,
+        model: 'deepseek-coder',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.DEEPSEEK_API_KEY,
+        quality: 'tier2'
+      },
+      
+      // ==================== FIREWORKS AI (High-Quality) ====================
+      {
+        name: 'fireworks-llama70b',
+        type: 'fireworks',
+        endpoint: 'https://api.fireworks.ai/inference/v1/chat/completions',
+        key: process.env.FIREWORKS_API_KEY,
+        model: 'accounts/fireworks/models/llama-v3p1-70b-instruct',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.FIREWORKS_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'fireworks-mixtral8x22b',
+        type: 'fireworks',
+        endpoint: 'https://api.fireworks.ai/inference/v1/chat/completions',
+        key: process.env.FIREWORKS_API_KEY,
+        model: 'accounts/fireworks/models/mixtral-8x22b-instruct',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.FIREWORKS_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'fireworks-qwen72b',
+        type: 'fireworks',
+        endpoint: 'https://api.fireworks.ai/inference/v1/chat/completions',
+        key: process.env.FIREWORKS_API_KEY,
+        model: 'accounts/fireworks/models/qwen2p5-72b-instruct',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.FIREWORKS_API_KEY,
+        quality: 'tier1'
+      },
+      
+      // ==================== GROQ (Free Tier - Fast) ====================
+      {
+        name: 'groq-llama70b',
+        type: 'groq',
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        key: process.env.GROQ_API_KEY,
+        model: 'llama-3.1-70b-versatile',
+        usage: 0,
+        limit: 30, // Free tier RPM
+        enabled: !!process.env.GROQ_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'groq-llama8b',
+        type: 'groq',
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        key: process.env.GROQ_API_KEY,
+        model: 'llama-3.1-8b-instant',
+        usage: 0,
+        limit: 30,
+        enabled: !!process.env.GROQ_API_KEY,
+        quality: 'tier2'
+      },
+      
+      // ==================== OTHER HIGH-QUALITY PROVIDERS ====================
+      {
+        name: 'mistral-large',
+        type: 'mistral',
+        endpoint: 'https://api.mistral.ai/v1/chat/completions',
+        key: process.env.MISTRAL_API_KEY,
+        model: 'mistral-large-latest',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.MISTRAL_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'mistral-medium',
+        type: 'mistral',
+        endpoint: 'https://api.mistral.ai/v1/chat/completions',
+        key: process.env.MISTRAL_API_KEY,
+        model: 'mistral-medium-latest',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.MISTRAL_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'cohere-command',
+        type: 'cohere',
+        endpoint: 'https://api.cohere.ai/v1/chat',
+        key: process.env.COHERE_API_KEY,
+        model: 'command-r-plus',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.COHERE_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'ai21-jamba',
+        type: 'ai21',
+        endpoint: 'https://api.ai21.com/studio/v1/',
+        key: process.env.AI21_API_KEY,
+        model: 'jamba-instruct',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.AI21_API_KEY,
+        quality: 'tier2'
+      }
+    ];
+    
+    this.currentIndex = 0;
+  }
+  
+  getAvailableProvider() {
+    // Priority: Tier 1 first, then Tier 2
+    const tier1Providers = this.providers.filter(p => 
+      p.enabled && p.usage < p.limit && p.quality === 'tier1'
+    );
+    
+    const tier2Providers = this.providers.filter(p => 
+      p.enabled && p.usage < p.limit && p.quality === 'tier2'
+    );
+    
+    const available = tier1Providers.length > 0 ? tier1Providers : tier2Providers;
+    
+    if (available.length === 0) return null;
+    
+    const provider = available[this.currentIndex % available.length];
+    this.currentIndex++;
+    return provider;
+  }
+  
+  getAllProvidersStatus() {
+    return this.providers.map(p => ({
+      name: p.name,
+      usage: p.usage,
+      limit: p.limit,
+      remaining: p.limit - p.usage,
+      enabled: p.enabled,
+      exhausted: p.usage >= p.limit
+    }));
+  }
+}
+
+const aiPool = new AIProviderPool();
+
+// Content Engine State - TOPIC-BASED GENERATION
+let contentEngine = {
+  running: false,
+  collected: [],
+  currentTopic: null,
+  topicComplete: false,
+  totalGenerated: 0,
+  paused: false,
+  startedAt: null,
+  error: null,
+  coverage: {
+    formulas: [],
+    topics: [],
+    difficulty_distribution: { Easy: 0, Medium: 0, Hard: 0 }
+  }
+};
+
+// POST /api/content-engine/start
+router.post('/start', auth, verifyAdmin, async (req, res) => {
+  try {
+    const { category, subcategory, topicType } = req.body;
+    
+    if (!category || !subcategory) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Category and subcategory required' 
+      });
+    }
+    
+    if (contentEngine.running && !contentEngine.paused) {
+      return res.status(400).json({ success: false, message: 'Content engine already running' });
+    }
+    
+    if (contentEngine.paused) {
+      contentEngine.paused = false;
+      contentEngine.error = null;
+      return res.json({ success: true, message: 'Content engine resumed', progress: contentEngine.totalGenerated });
+    }
+    
+    // Start new topic-based collection
+    contentEngine.running = true;
+    contentEngine.collected = [];
+    contentEngine.currentTopic = { category, subcategory, topicType: topicType || 'complete' };
+    contentEngine.topicComplete = false;
+    contentEngine.totalGenerated = 0;
+    contentEngine.paused = false;
+    contentEngine.startedAt = new Date();
+    contentEngine.error = null;
+    contentEngine.coverage = {
+      formulas: [],
+      topics: [],
+      difficulty_distribution: { Easy: 0, Medium: 0, Hard: 0 }
+    };
+    
+    res.json({ 
+      success: true, 
+      message: `Starting ${topicType || 'complete'} content generation for ${subcategory}`,
+      topic: contentEngine.currentTopic
+    });
+    
+    startCollection().catch(err => {
+      console.error('Content engine error:', err);
+      contentEngine.error = err.message;
+      contentEngine.running = false;
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// POST /api/content-engine/stop
+router.post('/stop', auth, verifyAdmin, async (req, res) => {
+  contentEngine.paused = true;
+  res.json({ 
+    success: true, 
+    message: 'Content engine paused', 
+    progress: contentEngine.totalGenerated,
+    collected: contentEngine.collected.length,
+    coverage: contentEngine.coverage
+  });
+});
+
+// POST /api/content-engine/reset
+router.post('/reset', auth, verifyAdmin, async (req, res) => {
+  contentEngine.running = false;
+  contentEngine.collected = [];
+  contentEngine.currentTopic = null;
+  contentEngine.topicComplete = false;
+  contentEngine.totalGenerated = 0;
+  contentEngine.paused = false;
+  contentEngine.error = null;
+  contentEngine.coverage = {
+    formulas: [],
+    topics: [],
+    difficulty_distribution: { Easy: 0, Medium: 0, Hard: 0 }
+  };
+  
+  // Reset AI provider usage
+  aiPool.providers.forEach(p => p.usage = 0);
+  
+  res.json({ success: true, message: 'Content engine reset' });
+});
+
+// GET /api/content-engine/status
+router.get('/status', auth, verifyAdmin, async (req, res) => {
+  res.json({
+    success: true,
+    running: contentEngine.running,
+    paused: contentEngine.paused,
+    currentTopic: contentEngine.currentTopic,
+    topicComplete: contentEngine.topicComplete,
+    totalGenerated: contentEngine.totalGenerated,
+    collected: contentEngine.collected.length,
+    startedAt: contentEngine.startedAt,
+    error: contentEngine.error,
+    coverage: contentEngine.coverage,
+    providers: aiPool.getAllProvidersStatus()
+  });
+});
+
+// GET /api/content-engine/preview
+router.get('/preview', auth, verifyAdmin, async (req, res) => {
+  res.json({
+    success: true,
+    items: contentEngine.collected,
+    total: contentEngine.collected.length
+  });
+});
+
+// POST /api/content-engine/approve
+router.post('/approve', auth, verifyAdmin, async (req, res) => {
+  try {
+    const { items } = req.body;
+    const Material = require('../models/Material');
+    
+    let published = 0;
+    for (const item of items) {
+      if (item.approved) {
+        await Material.create({
+          title: item.title,
+          category: item.category,
+          subcategory: item.subcategory,
+          pricePerDay: item.suggestedPrice,
+          fileUrl: item.fileUrl,
+          description: item.description,
+          difficulty: item.difficulty,
+          pages: item.pages || 1
+        });
+        published++;
+      }
+    }
+    
+    res.json({ success: true, message: `${published} items published`, published });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Background collection - TOPIC-BASED
+async function startCollection() {
+  console.log('Content engine: Starting topic-based collection...');
+  console.log(`Topic: ${contentEngine.currentTopic.category} > ${contentEngine.currentTopic.subcategory}`);
+  
+  let consecutiveFailures = 0;
+  const maxFailures = 10;
+  
+  while (contentEngine.running && !contentEngine.topicComplete) {
+    // Check if paused
+    if (contentEngine.paused) {
+      console.log('Content engine: Paused');
+      await new Promise(resolve => setTimeout(resolve, 5000));
+      continue;
+    }
+    
+    try {
+      const provider = aiPool.getAvailableProvider();
+      
+      if (!provider) {
+        console.log('Content engine: All providers exhausted');
+        contentEngine.error = 'All AI providers have reached their limits';
+        contentEngine.running = false;
+        break;
+      }
+      
+      const content = await generateContent(provider, contentEngine.totalGenerated + 1);
+      
+      if (content) {
+        contentEngine.collected.push(content);
+        contentEngine.totalGenerated++;
+        provider.usage++;
+        consecutiveFailures = 0;
+        
+        // Update coverage tracking
+        if (content.formulas) {
+          contentEngine.coverage.formulas.push(...content.formulas);
+        }
+        if (content.topicsCovered) {
+          contentEngine.coverage.topics.push(...content.topicsCovered);
+        }
+        if (content.difficulty) {
+          contentEngine.coverage.difficulty_distribution[content.difficulty]++;
+        }
+        
+        console.log(`Content engine: ${contentEngine.totalGenerated} items collected`);
+        
+        // Check if topic is complete
+        if (content.topicComplete || contentEngine.collected.length >= 500) {
+          contentEngine.topicComplete = true;
+          console.log('Content engine: Topic coverage complete!');
+          break;
+        }
+      } else {
+        consecutiveFailures++;
+        if (consecutiveFailures >= maxFailures) {
+          console.log('Content engine: Too many consecutive failures, stopping');
+          contentEngine.error = 'Generation quality degraded';
+          contentEngine.running = false;
+          break;
+        }
+      }
+    } catch (err) {
+      console.error(`Content generation error: ${err.message}`);
+      consecutiveFailures++;
+    }
+    
+    // Delay to avoid rate limits (5 seconds between requests)
+    await new Promise(resolve => setTimeout(resolve, 5000));
+  }
+  
+  if (contentEngine.running && !contentEngine.paused) {
+    console.log('Content engine: Collection complete!');
+    contentEngine.running = false;
+  }
+}
+
+// Generate content using specific provider - TOPIC-COVERAGE FOCUSED
+async function generateContent(provider, index) {
+  const { category, subcategory, topicType } = contentEngine.currentTopic;
+  
+  const prompt = `You are creating COMPREHENSIVE educational content for ${category} - ${subcategory}.
+
+CURRENT OBJECTIVE: Generate COMPLETE topic coverage (not random content)
+
+CONTENT TYPE: ${topicType === 'formulas' ? 'FORMULA BANK - Include ALL formulas with explanations' : 
+                topicType === 'questions' ? 'PRACTICE QUESTIONS - Cover all difficulty levels' : 
+                'COMPLETE PACKAGE - Formulas + Concepts + Practice Questions'}
+
+REQUIREMENTS:
+1. Be SYSTEMATIC: Cover topics in logical order
+2. Be COMPREHENSIVE: Don't miss important formulas/concepts
+3. Be ORIGINAL: Create new variations, not copied content
+4. Include references to standard textbooks
+5. Difficulty should progress: Easy fundamentals → Advanced applications
+
+Track what you've already covered. If the topic is FULLY covered, set topicComplete to true.
+
+Generate content as JSON:
+{
+  "title": "${subcategory}: [Specific Topic/Formula Sheet ${index}]",
+  "category": "${category}",
+  "subcategory": "${subcategory}",
+  "difficulty": "Easy or Medium or Hard",
+  "content": "The actual educational content (formulas, explanations, practice questions)",
+  "formulas": ["list all formulas included"],
+  "topicsCovered": ["list topics covered in this sheet"],
+  "topicComplete": false (set true if ENTIRE ${subcategory} is fully covered),
+  "references": ["HC Verma Vol 1", "NCERT Class 11", "etc"],
+  "suggestedPrice": 40-120 (based on depth and difficulty),
+  "pages": 2-5
+}`;
+
+  try {
+    switch (provider.type) {
+      case 'openrouter':
+        response = await axios.post(provider.endpoint, {
+          model: provider.model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 2000,
+          temperature: 0.7
+        }, {
+          headers: {
+            'Authorization': `Bearer ${provider.key}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': 'https://scholarstock.com',
+            'X-Title': 'ScholarStock Content Engine'
+          }
+        });
+        
+        const content = response.data.choices[0].message.content;
+        return parseContent(content, index);
+        
+      case 'huggingface':
+        response = await axios.post(`${provider.endpoint}${provider.model}`, {
+          inputs: prompt,
+          parameters: { max_new_tokens: 2000, temperature: 0.7 }
+        }, {
+          headers: {
+            'Authorization': `Bearer ${provider.key}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        return parseContent(response.data[0]?.generated_text || '', index);
+        
+      case 'together':
+      case 'deepseek':
+      case 'fireworks':
+      case 'groq':
+      case 'mistral':
+        response = await axios.post(provider.endpoint, {
+          model: provider.model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 2000,
+          temperature: 0.7
+        }, {
+          headers: {
+            'Authorization': `Bearer ${provider.key}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        return parseContent(response.data.choices[0].message.content, index);
+        
+      case 'gemini':
+        response = await axios.post(`${provider.endpoint}${provider.model}:generateContent?key=${provider.key}`, {
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 2000, temperature: 0.7 }
+        });
+        
+        return parseContent(response.data.candidates[0].content.parts[0].text, index);
+        
+      case 'cohere':
+        response = await axios.post(provider.endpoint, {
+          model: provider.model,
+          message: prompt,
+          max_tokens: 2000,
+          temperature: 0.7
+        }, {
+          headers: {
+            'Authorization': `Bearer ${provider.key}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        return parseContent(response.data.text, index);
+        
+      case 'ai21':
+        response = await axios.post(`${provider.endpoint}${provider.model}/complete`, {
+          prompt: prompt,
+          maxTokens: 2000,
+          temperature: 0.7
+        }, {
+          headers: {
+            'Authorization': `Bearer ${provider.key}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        return parseContent(response.data.completions[0].data.text, index);
+        
+      default:
+        throw new Error(`Unknown provider type: ${provider.type}`);
+    }
+  } catch (err) {
+    console.error(`${provider.name} error:`, err.message);
+    // Return null to retry with next provider
+    return null;
+  }
+}
+
+// Parse AI response into structured content - TOPIC COVERAGE
+function parseContent(content, index) {
+  try {
+    // Extract JSON from response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      return createFallbackContent(index);
+    }
+    
+    const data = JSON.parse(jsonMatch[0]);
+    
+    return {
+      title: data.title || `Content Sheet ${index}`,
+      category: data.category || 'JEE',
+      subcategory: data.subcategory || 'Physics',
+      difficulty: data.difficulty || 'Medium',
+      content: data.content || '',
+      formulas: data.formulas || [],
+      topicsCovered: data.topicsCovered || [],
+      topicComplete: data.topicComplete || false,
+      references: data.references || [],
+      suggestedPrice: data.suggestedPrice || 60,
+      pages: data.pages || 3,
+      approved: false,
+      fileUrl: null,
+      rawContent: content
+    };
+  } catch (err) {
+    return createFallbackContent(index);
+  }
+}
+
+// Fallback content if parsing fails - MAINTAIN QUALITY
+function createFallbackContent(index) {
+  const categories = ['JEE', 'NEET', 'UPSC'];
+  const subjects = ['Physics', 'Chemistry', 'Math', 'Biology'];
+  const difficulties = ['Easy', 'Medium', 'Hard'];
+  const prices = [40, 50, 60, 70, 80, 90, 100, 120];
+  
+  return {
+    title: `Content Sheet ${index}`,
+    category: categories[Math.floor(Math.random() * categories.length)],
+    subcategory: subjects[Math.floor(Math.random() * subjects.length)],
+    difficulty: difficulties[Math.floor(Math.random() * difficulties.length)],
+    content: '',
+    formulas: [],
+    topicsCovered: [],
+    topicComplete: false,
+    suggestedPrice: prices[Math.floor(Math.random() * prices.length)],
+    pages: Math.floor(Math.random() * 4) + 2,
+    approved: false,
+    fileUrl: null
+  };
+}
+
+module.exports = router;
