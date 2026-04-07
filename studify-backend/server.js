@@ -35,26 +35,25 @@ const connectDB = async () => {
 };
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/users', require('./routes/users'));
-app.use('/api/materials', require('./routes/materials'));
-app.use('/api/categories', require('./routes/categories'));
-app.use('/api/cart', require('./routes/cart'));
-app.use('/api/orders', require('./routes/orders'));
-app.use('/api/rentals', require('./routes/rentals'));
-app.use('/api/referral', require('./routes/referral'));
-app.use('/api/wishlist', require('./routes/wishlist'));
-app.use('/api/pricing', require('./routes/pricing'));
-
-// NEW AI Routes - These were missing
-app.use('/api/chatbot', require('./routes/chatbot'));
-app.use('/api/doubt', require('./routes/doubt'));
-app.use('/api/study-strategist', require('./routes/studyStrategist'));
-app.use('/api/calculator', require('./routes/calculater'));
-app.use('/api/mocktest', require('./routes/mocktest'));
-
-// Admin Routes - Vault & Login (reads from env)
 app.use('/api/admin', require('./routes/admin'));
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/calculator', require('./routes/calculater'));
+app.use('/api/cart', require('./routes/cart'));
+app.use('/api/categories', require('./routes/categories'));
+app.use('/api/chatbot', require('./routes/chatbot'));
+app.use('/api/content-engine', require('./routes/contentEngine'));
+app.use('/api/doubt', require('./routes/doubt'));
+app.use('/api/founder', require('./routes/founder'));
+app.use('/api/materials', require('./routes/materials'));
+app.use('/api/mocktest', require('./routes/mocktest'));
+app.use('/api/payments', require('./routes/payments'));
+app.use('/api/pricing', require('./routes/pricingPlans'));
+app.use('/api/referral', require('./routes/referral'));
+app.use('/api/referral-settings', require('./routes/referralSettings'));
+app.use('/api/rentals', require('./routes/rantals'));
+app.use('/api/settings', require('./routes/settings'));
+app.use('/api/study-planner', require('./routes/studyPlanner'));
+app.use('/api/study-strategist', require('./routes/studyStrategist'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
