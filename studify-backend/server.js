@@ -49,6 +49,7 @@ app.use('/api/doubt', require('./routes/doubt'));
 app.use('/api/study-strategist', require('./routes/studyPlanner'));
 app.use('/api/calculator', require('./routes/calculater'));
 app.use('/api/mocktest', require('./routes/mocktest'));
+app.use('/api/content-engine', require('./routes/contentEngine'));
 
 // Pricing Plans
 app.use('/api/pricing-plans', require('./routes/pricingPlans'));
