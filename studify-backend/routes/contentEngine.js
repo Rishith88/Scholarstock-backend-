@@ -8,8 +8,97 @@ class AIProviderPool {
   constructor() {
     this.providers = [
       // ==================== OPENROUTER (FREE High-Quality Models) ====================
+      // Verified free models as of 2025-2026
       { 
-        name: 'openrouter-llama70b', 
+        name: 'openrouter-llama3.3-70b', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'meta-llama/llama-3.3-70b-instruct:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-qwen3-32b', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'qwen/qwen3-32b:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-mistral-small', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'mistralai/mistral-small-3.1-24b-instruct:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-deepseek-r1', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'deepseek/deepseek-r1:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-gemma3-27b', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'google/gemma-3-27b-it:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-nemotron3-super', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'nvidia/nemotron-3-nano-super:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-step3.5-flash', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'stepfun/step-3.5-flash:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier2'
+      },
+      { 
+        name: 'openrouter-trinity-large', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'arcee-ai/trinity-large-preview:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier2'
+      },
+      { 
+        name: 'openrouter-llama-3.1-70b', 
         type: 'openrouter',
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
         key: process.env.OPENROUTER_API_KEY,
@@ -20,18 +109,7 @@ class AIProviderPool {
         quality: 'tier1'
       },
       { 
-        name: 'openrouter-mixtral8x22b', 
-        type: 'openrouter',
-        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        key: process.env.OPENROUTER_API_KEY,
-        model: 'mistralai/mixtral-8x22b-instruct:free',
-        usage: 0,
-        limit: 1000,
-        enabled: true,
-        quality: 'tier1'
-      },
-      { 
-        name: 'openrouter-qwen72b', 
+        name: 'openrouter-qwen2.5-72b', 
         type: 'openrouter',
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
         key: process.env.OPENROUTER_API_KEY,
@@ -42,55 +120,11 @@ class AIProviderPool {
         quality: 'tier1'
       },
       { 
-        name: 'openrouter-hermes70b', 
+        name: 'openrouter-mixtral-8x7b', 
         type: 'openrouter',
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
         key: process.env.OPENROUTER_API_KEY,
-        model: 'nousresearch/hermes-3-llama-3.1-70b:free',
-        usage: 0,
-        limit: 1000,
-        enabled: true,
-        quality: 'tier1'
-      },
-      { 
-        name: 'openrouter-gemini-flash', 
-        type: 'openrouter',
-        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        key: process.env.OPENROUTER_API_KEY,
-        model: 'google/gemini-2.0-flash-exp:free',
-        usage: 0,
-        limit: 1000,
-        enabled: true,
-        quality: 'tier1'
-      },
-      { 
-        name: 'openrouter-llama8b', 
-        type: 'openrouter',
-        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        key: process.env.OPENROUTER_API_KEY,
-        model: 'meta-llama/llama-3.1-8b-instruct:free',
-        usage: 0,
-        limit: 1000,
-        enabled: true,
-        quality: 'tier2'
-      },
-      { 
-        name: 'openrouter-mistral7b', 
-        type: 'openrouter',
-        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        key: process.env.OPENROUTER_API_KEY,
-        model: 'mistralai/mistral-7b-instruct:free',
-        usage: 0,
-        limit: 1000,
-        enabled: true,
-        quality: 'tier2'
-      },
-      { 
-        name: 'openrouter-qwen7b', 
-        type: 'openrouter',
-        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        key: process.env.OPENROUTER_API_KEY,
-        model: 'qwen/qwen-2.5-7b-instruct:free',
+        model: 'mistralai/mixtral-8x7b-instruct:free',
         usage: 0,
         limit: 1000,
         enabled: true,
@@ -213,24 +247,24 @@ class AIProviderPool {
       
       // ==================== INDIVIDUAL APIs (High-Quality) ====================
       {
-        name: 'gemini-pro',
+        name: 'gemini-2.5-flash',
+        type: 'gemini',
+        endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/',
+        key: process.env.GEMINI_API_KEY,
+        model: 'gemini-2.5-flash',
+        usage: 0,
+        limit: 15, // 15 RPM on free tier (reduced from 60)
+        enabled: !!process.env.GEMINI_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'gemini-2.0-flash',
         type: 'gemini',
         endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/',
         key: process.env.GEMINI_API_KEY,
         model: 'gemini-2.0-flash',
         usage: 0,
-        limit: 60,
-        enabled: !!process.env.GEMINI_API_KEY,
-        quality: 'tier1'
-      },
-      {
-        name: 'gemini-pro-1.5',
-        type: 'gemini',
-        endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/',
-        key: process.env.GEMINI_API_KEY,
-        model: 'gemini-1.5-pro',
-        usage: 0,
-        limit: 60,
+        limit: 15,
         enabled: !!process.env.GEMINI_API_KEY,
         quality: 'tier1'
       },
