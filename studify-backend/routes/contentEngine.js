@@ -8,7 +8,7 @@ class AIProviderPool {
   constructor() {
     this.providers = [
       // ==================== OPENROUTER (FREE High-Quality Models) ====================
-      // Verified free models as of 2025-2026
+      // Verified free models as of 2026 (50 req/day free, 1000/day with $10 balance)
       { 
         name: 'openrouter-llama3.3-70b', 
         type: 'openrouter',
@@ -32,11 +32,11 @@ class AIProviderPool {
         quality: 'tier1'
       },
       { 
-        name: 'openrouter-mistral-small', 
+        name: 'openrouter-qwen3-235b', 
         type: 'openrouter',
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
         key: process.env.OPENROUTER_API_KEY,
-        model: 'mistralai/mistral-small-3.1-24b-instruct:free',
+        model: 'qwen/qwen3-235b-a22b:free',
         usage: 0,
         limit: 1000,
         enabled: true,
@@ -48,6 +48,72 @@ class AIProviderPool {
         endpoint: 'https://openrouter.ai/api/v1/chat/completions',
         key: process.env.OPENROUTER_API_KEY,
         model: 'deepseek/deepseek-r1:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-deepseek-v3', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'deepseek/deepseek-chat-v3-0324:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-llama4-scout', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'meta-llama/llama-4-scout:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-llama4-maverick', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'meta-llama/llama-4-maverick:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-gpt-oss-120b', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'openai/gpt-oss-120b:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-kimi-k2', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'moonshotai/kimi-k2:free',
+        usage: 0,
+        limit: 1000,
+        enabled: true,
+        quality: 'tier1'
+      },
+      { 
+        name: 'openrouter-mistral-small', 
+        type: 'openrouter',
+        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        key: process.env.OPENROUTER_API_KEY,
+        model: 'mistralai/mistral-small-3.1-24b-instruct:free',
         usage: 0,
         limit: 1000,
         enabled: true,
@@ -75,60 +141,52 @@ class AIProviderPool {
         enabled: true,
         quality: 'tier1'
       },
-      { 
-        name: 'openrouter-step3.5-flash', 
-        type: 'openrouter',
-        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        key: process.env.OPENROUTER_API_KEY,
-        model: 'stepfun/step-3.5-flash:free',
+      
+      // ==================== GROQ (FREE - Ultra Fast) ====================
+      // Verified 2026: 1000 req/day (70B models), 14400 req/day (8B models)
+      {
+        name: 'groq-llama3.3-70b',
+        type: 'groq',
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        key: process.env.GROQ_API_KEY,
+        model: 'llama-3.3-70b-versatile',
         usage: 0,
-        limit: 1000,
-        enabled: true,
-        quality: 'tier2'
-      },
-      { 
-        name: 'openrouter-trinity-large', 
-        type: 'openrouter',
-        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        key: process.env.OPENROUTER_API_KEY,
-        model: 'arcee-ai/trinity-large-preview:free',
-        usage: 0,
-        limit: 1000,
-        enabled: true,
-        quality: 'tier2'
-      },
-      { 
-        name: 'openrouter-llama-3.1-70b', 
-        type: 'openrouter',
-        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        key: process.env.OPENROUTER_API_KEY,
-        model: 'meta-llama/llama-3.1-70b-instruct:free',
-        usage: 0,
-        limit: 1000,
-        enabled: true,
+        limit: 1000, // 30 RPM, 1000 req/day
+        enabled: !!process.env.GROQ_API_KEY,
         quality: 'tier1'
       },
-      { 
-        name: 'openrouter-qwen2.5-72b', 
-        type: 'openrouter',
-        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        key: process.env.OPENROUTER_API_KEY,
-        model: 'qwen/qwen-2.5-72b-instruct:free',
+      {
+        name: 'groq-llama4-scout',
+        type: 'groq',
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        key: process.env.GROQ_API_KEY,
+        model: 'llama-4-scout-17b-16e-instruct',
         usage: 0,
         limit: 1000,
-        enabled: true,
+        enabled: !!process.env.GROQ_API_KEY,
         quality: 'tier1'
       },
-      { 
-        name: 'openrouter-mixtral-8x7b', 
-        type: 'openrouter',
-        endpoint: 'https://openrouter.ai/api/v1/chat/completions',
-        key: process.env.OPENROUTER_API_KEY,
-        model: 'mistralai/mixtral-8x7b-instruct:free',
+      {
+        name: 'groq-qwen3-32b',
+        type: 'groq',
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        key: process.env.GROQ_API_KEY,
+        model: 'qwen-3-32b',
         usage: 0,
         limit: 1000,
-        enabled: true,
-        quality: 'tier2'
+        enabled: !!process.env.GROQ_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'groq-kimi-k2',
+        type: 'groq',
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        key: process.env.GROQ_API_KEY,
+        model: 'kimi-k2-0905',
+        usage: 0,
+        limit: 1000,
+        enabled: !!process.env.GROQ_API_KEY,
+        quality: 'tier1'
       },
       
       // ==================== HUGGINGFACE (High-Quality Models) ====================
@@ -188,64 +246,206 @@ class AIProviderPool {
         quality: 'tier2'
       },
       
-      // ==================== TOGETHER AI (High-Quality Models) ====================
+      // ==================== CEREBRAS (FREE - Ultra Fast) ====================
+      // Verified 2026: 1M tokens/day, 30 RPM
       {
-        name: 'together-llama70b',
-        type: 'together',
-        endpoint: 'https://api.together.xyz/v1/chat/completions',
-        key: process.env.TOGETHER_API_KEY,
-        model: 'meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo',
+        name: 'cerebras-llama3.3-70b',
+        type: 'cerebras',
+        endpoint: 'https://api.cerebras.ai/v1/chat/completions',
+        key: process.env.CEREBRAS_API_KEY,
+        model: 'llama3.3-70b',
         usage: 0,
-        limit: 100,
-        enabled: !!process.env.TOGETHER_API_KEY,
+        limit: 1000, // 1M tokens/day
+        enabled: !!process.env.CEREBRAS_API_KEY,
         quality: 'tier1'
       },
       {
-        name: 'together-mixtral8x22b',
-        type: 'together',
-        endpoint: 'https://api.together.xyz/v1/chat/completions',
-        key: process.env.TOGETHER_API_KEY,
-        model: 'mistralai/Mixtral-8x22B-Instruct-v0.1',
+        name: 'cerebras-qwen3-32b',
+        type: 'cerebras',
+        endpoint: 'https://api.cerebras.ai/v1/chat/completions',
+        key: process.env.CEREBRAS_API_KEY,
+        model: 'qwen3-32b',
         usage: 0,
-        limit: 100,
-        enabled: !!process.env.TOGETHER_API_KEY,
+        limit: 1000,
+        enabled: !!process.env.CEREBRAS_API_KEY,
+        quality: 'tier1'
+      },
+      
+      // ==================== GITHUB MODELS (FREE) ====================
+      // Verified 2026: 50-150 req/day depending on model
+      {
+        name: 'github-gpt-4o',
+        type: 'github',
+        endpoint: 'https://models.inference.ai.azure.com/chat/completions',
+        key: process.env.GITHUB_TOKEN,
+        model: 'gpt-4o',
+        usage: 0,
+        limit: 50, // 10 RPM, 50 req/day
+        enabled: !!process.env.GITHUB_TOKEN,
         quality: 'tier1'
       },
       {
-        name: 'together-qwen72b',
-        type: 'together',
-        endpoint: 'https://api.together.xyz/v1/chat/completions',
-        key: process.env.TOGETHER_API_KEY,
-        model: 'Qwen/Qwen2.5-72B-Instruct-Turbo',
+        name: 'github-grok-3',
+        type: 'github',
+        endpoint: 'https://models.inference.ai.azure.com/chat/completions',
+        key: process.env.GITHUB_TOKEN,
+        model: 'grok-3',
         usage: 0,
-        limit: 100,
-        enabled: !!process.env.TOGETHER_API_KEY,
+        limit: 50,
+        enabled: !!process.env.GITHUB_TOKEN,
         quality: 'tier1'
       },
       {
-        name: 'together-dbrx',
-        type: 'together',
-        endpoint: 'https://api.together.xyz/v1/chat/completions',
-        key: process.env.TOGETHER_API_KEY,
-        model: 'databricks/dbrx-instruct',
+        name: 'github-deepseek-r1',
+        type: 'github',
+        endpoint: 'https://models.inference.ai.azure.com/chat/completions',
+        key: process.env.GITHUB_TOKEN,
+        model: 'deepseek-r1',
         usage: 0,
-        limit: 100,
-        enabled: !!process.env.TOGETHER_API_KEY,
+        limit: 150, // 15 RPM, 150 req/day
+        enabled: !!process.env.GITHUB_TOKEN,
+        quality: 'tier1'
+      },
+      
+      // ==================== NVIDIA NIM (FREE) ====================
+      // Verified 2026: 1000 credits free
+      {
+        name: 'nvidia-deepseek-r1',
+        type: 'nvidia',
+        endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions',
+        key: process.env.NVIDIA_API_KEY,
+        model: 'deepseek-ai/deepseek-r1',
+        usage: 0,
+        limit: 100, // 40 RPM, 1000 credits
+        enabled: !!process.env.NVIDIA_API_KEY,
         quality: 'tier1'
       },
       {
-        name: 'together-deepseek-llm67b',
-        type: 'together',
-        endpoint: 'https://api.together.xyz/v1/chat/completions',
-        key: process.env.TOGETHER_API_KEY,
-        model: 'deepseek-ai/deepseek-llm-67b-chat',
+        name: 'nvidia-kimi-k2.5',
+        type: 'nvidia',
+        endpoint: 'https://integrate.api.nvidia.com/v1/chat/completions',
+        key: process.env.NVIDIA_API_KEY,
+        model: 'moonshotai/kimi-k2-instruct',
         usage: 0,
         limit: 100,
-        enabled: !!process.env.TOGETHER_API_KEY,
+        enabled: !!process.env.NVIDIA_API_KEY,
+        quality: 'tier1'
+      },
+      
+      // ==================== CLOUDFLARE WORKERS AI (FREE) ====================
+      // Verified 2026: 10K neurons/day
+      {
+        name: 'cloudflare-llama3.2',
+        type: 'cloudflare',
+        endpoint: 'https://api.cloudflare.com/client/v4/accounts/',
+        key: process.env.CLOUDFLARE_API_TOKEN,
+        model: '@cf/meta/llama-3.2-3b-instruct',
+        usage: 0,
+        limit: 500, // 10K neurons/day
+        enabled: !!process.env.CLOUDFLARE_API_TOKEN,
+        quality: 'tier2'
+      },
+      {
+        name: 'cloudflare-mistral-7b',
+        type: 'cloudflare',
+        endpoint: 'https://api.cloudflare.com/client/v4/accounts/',
+        key: process.env.CLOUDFLARE_API_TOKEN,
+        model: '@hf/thebloke/mistral-7b-instruct-v0.1-awq',
+        usage: 0,
+        limit: 500,
+        enabled: !!process.env.CLOUDFLARE_API_TOKEN,
         quality: 'tier2'
       },
       
+      // ==================== XAI/GROK (FREE CREDITS) ====================
+      // Verified 2026: $25 signup credits
+      {
+        name: 'xai-grok-3',
+        type: 'xai',
+        endpoint: 'https://api.x.ai/v1/chat/completions',
+        key: process.env.XAI_API_KEY,
+        model: 'grok-3',
+        usage: 0,
+        limit: 100, // $25 free credits
+        enabled: !!process.env.XAI_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'xai-grok-3-fast',
+        type: 'xai',
+        endpoint: 'https://api.x.ai/v1/chat/completions',
+        key: process.env.XAI_API_KEY,
+        model: 'grok-3-fast',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.XAI_API_KEY,
+        quality: 'tier1'
+      },
+      
+      // ==================== SAMBANOVA (FREE) ====================
+      // Verified 2026: $5 credits + free tier
+      {
+        name: 'sambanova-llama3.3-70b',
+        type: 'sambanova',
+        endpoint: 'https://api.sambanova.ai/v1/chat/completions',
+        key: process.env.SAMBANOVA_API_KEY,
+        model: 'Meta-Llama-3.3-70B-Instruct',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.SAMBANOVA_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'sambanova-qwen2.5-72b',
+        type: 'sambanova',
+        endpoint: 'https://api.sambanova.ai/v1/chat/completions',
+        key: process.env.SAMBANOVA_API_KEY,
+        model: 'Qwen2.5-72B-Instruct',
+        usage: 0,
+        limit: 100,
+        enabled: !!process.env.SAMBANOVA_API_KEY,
+        quality: 'tier1'
+      },
+      
+      // ==================== DEEPSEEK DIRECT (FREE/VERY CHEAP) ====================
+      // Verified 2026: 5M tokens free, then very cheap
+      {
+        name: 'deepseek-chat-v3',
+        type: 'deepseek',
+        endpoint: 'https://api.deepseek.com/v1/chat/completions',
+        key: process.env.DEEPSEEK_API_KEY,
+        model: 'deepseek-chat',
+        usage: 0,
+        limit: 500, // 5M tokens free
+        enabled: !!process.env.DEEPSEEK_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'deepseek-reasoner-r1',
+        type: 'deepseek',
+        endpoint: 'https://api.deepseek.com/v1/chat/completions',
+        key: process.env.DEEPSEEK_API_KEY,
+        model: 'deepseek-reasoner',
+        usage: 0,
+        limit: 500,
+        enabled: !!process.env.DEEPSEEK_API_KEY,
+        quality: 'tier1'
+      },
+      
       // ==================== INDIVIDUAL APIs (High-Quality) ====================
+      // Arranged from MOST generous free tier to least
+      // NOTE: Gemini 2.5 Pro free tier was REMOVED in Dec 2025
+      {
+        name: 'gemini-2.5-flash-lite',
+        type: 'gemini',
+        endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/',
+        key: process.env.GEMINI_API_KEY,
+        model: 'gemini-2.5-flash-lite',
+        usage: 0,
+        limit: 1000, // MOST GENEROUS: 15 RPM, 1000 RPD
+        enabled: !!process.env.GEMINI_API_KEY,
+        quality: 'tier2' // Slightly less capable but very fast
+      },
       {
         name: 'gemini-2.5-flash',
         type: 'gemini',
@@ -253,20 +453,9 @@ class AIProviderPool {
         key: process.env.GEMINI_API_KEY,
         model: 'gemini-2.5-flash',
         usage: 0,
-        limit: 15, // 15 RPM on free tier (reduced from 60)
+        limit: 250, // 10 RPM, 250 RPD (best balance)
         enabled: !!process.env.GEMINI_API_KEY,
-        quality: 'tier1'
-      },
-      {
-        name: 'gemini-2.0-flash',
-        type: 'gemini',
-        endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/',
-        key: process.env.GEMINI_API_KEY,
-        model: 'gemini-2.0-flash',
-        usage: 0,
-        limit: 15,
-        enabled: !!process.env.GEMINI_API_KEY,
-        quality: 'tier1'
+        quality: 'tier1' // Best quality with free tier
       },
       {
         name: 'deepseek-chat',
