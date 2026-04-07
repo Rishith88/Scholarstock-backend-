@@ -19,40 +19,42 @@ app.use(express.urlencoded({ extended: true }));
 // Database connection
 const connectDB = async () => {
   try {
-    const conn = await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017/scholarstock', {
+    const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/scholarstock', {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
     console.log(`MongoDB Connected: ${conn.connection.host}`);
+    
+    // Initialize default pricing plans
+    const PricingPlan = require('./models/PricingPlan');
+    await PricingPlan.initializeDefaultPlans();
   } catch (error) {
     console.error(`Error: ${error.message}`);
     process.exit(1);
   }
 };
 
-// Routes - ONLY EXISTING ROUTE FILES
+// Routes
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/users', require('./routes/users'));
 app.use('/api/materials', require('./routes/materials'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/cart', require('./routes/cart'));
+app.use('/api/orders', require('./routes/orders'));
 app.use('/api/rentals', require('./routes/rentals'));
 app.use('/api/referral', require('./routes/referral'));
-app.use('/api/admin', require('./routes/admin'));
-app.use('/api/payments', require('./routes/payments'));
-app.use('/api/founder', require('./routes/founder'));
-app.use('/api/settings', require('./routes/settings'));
-app.use('/api/referral-settings', require('./routes/referralSettings'));
+app.use('/api/wishlist', require('./routes/wishlist'));
+app.use('/api/pricing', require('./routes/pricing'));
 
-// AI Routes
+// NEW AI Routes - These were missing
 app.use('/api/chatbot', require('./routes/chatbot'));
 app.use('/api/doubt', require('./routes/doubt'));
-app.use('/api/study-strategist', require('./routes/studyPlanner'));
+app.use('/api/study-strategist', require('./routes/studyStrategist'));
 app.use('/api/calculator', require('./routes/calculater'));
 app.use('/api/mocktest', require('./routes/mocktest'));
-app.use('/api/content-engine', require('./routes/contentEngine'));
 
-// Pricing Plans
-app.use('/api/pricing-plans', require('./routes/pricingPlans'));
+// Admin Routes - Vault & Login (reads from env)
+app.use('/api/admin', require('./routes/admin'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -87,11 +89,5 @@ connectDB().then(() => {
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    
-    // Initialize pricing plans AFTER server starts and DB is connected
-    const PricingPlan = require('./models/PricingPlan');
-    PricingPlan.initializeDefaultPlans().catch(err => {
-      console.error('Error initializing pricing plans:', err.message);
-    });
   });
 });
