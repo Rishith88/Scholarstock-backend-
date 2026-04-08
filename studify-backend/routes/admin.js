@@ -4,10 +4,13 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Material = require('../models/Material');
 const Rental = require('../models/Rental');
-const { verifyAdmin } = require('../middleware/auth');
+const { verifyToken, verifyAdmin } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+
+// Combined middleware for cleaner admin routes
+const adminAuth = [verifyToken, verifyAdmin];
 
 // Multer storage for local PDF uploads
 const storage = multer.diskStorage({
@@ -88,7 +91,7 @@ router.post('/login', (req, res) => {
 // --- PROTECTED ADMIN ROUTES ---
 
 // GET /api/admin/stats - Get dashboard statistics
-router.get('/stats', verifyAdmin, async (req, res) => {
+router.get('/stats', adminAuth, async (req, res) => {
   try {
     const totalUsers = await User.countDocuments({ role: 'user' });
     const totalMaterials = await Material.countDocuments();
@@ -132,7 +135,7 @@ router.get('/stats', verifyAdmin, async (req, res) => {
 });
 
 // GET /api/admin/users - Get all users
-router.get('/users', verifyAdmin, async (req, res) => {
+router.get('/users', adminAuth, async (req, res) => {
   try {
     const { limit = 100, skip = 0 } = req.query;
     const users = await User.find({ role: 'user' })
@@ -147,7 +150,7 @@ router.get('/users', verifyAdmin, async (req, res) => {
 });
 
 // DELETE /api/admin/users/:id - Delete a user
-router.delete('/users/:id', verifyAdmin, async (req, res) => {
+router.delete('/users/:id', adminAuth, async (req, res) => {
   try {
     await User.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'User deleted' });
@@ -157,7 +160,7 @@ router.delete('/users/:id', verifyAdmin, async (req, res) => {
 });
 
 // GET /api/admin/materials - Get all materials
-router.get('/materials', verifyAdmin, async (req, res) => {
+router.get('/materials', adminAuth, async (req, res) => {
   try {
     const { limit = 100, skip = 0 } = req.query;
     const materials = await Material.find()
@@ -172,7 +175,7 @@ router.get('/materials', verifyAdmin, async (req, res) => {
 });
 
 // POST /api/admin/materials - Create a new material with PDF
-router.post('/materials', verifyAdmin, upload.single('pdf'), async (req, res) => {
+router.post('/materials', adminAuth, upload.single('pdf'), async (req, res) => {
   try {
     const { title, category, subcategory, price, description, author } = req.body;
     
@@ -201,7 +204,7 @@ router.post('/materials', verifyAdmin, upload.single('pdf'), async (req, res) =>
 });
 
 // DELETE /api/admin/materials/:id - Delete a material
-router.delete('/materials/:id', verifyAdmin, async (req, res) => {
+router.delete('/materials/:id', adminAuth, async (req, res) => {
   try {
     const material = await Material.findById(req.params.id);
     if (!material) return res.status(404).json({ success: false, message: 'Material not found' });
@@ -222,7 +225,7 @@ router.delete('/materials/:id', verifyAdmin, async (req, res) => {
 });
 
 // GET /api/admin/rentals - Get all rentals (transactions)
-router.get('/rentals', verifyAdmin, async (req, res) => {
+router.get('/rentals', adminAuth, async (req, res) => {
   try {
     const { limit = 100, skip = 0 } = req.query;
     const rentals = await Rental.find()
@@ -247,7 +250,7 @@ router.get('/rentals', verifyAdmin, async (req, res) => {
 });
 
 // PUT /api/admin/categories - Update categories structure
-router.put('/categories', verifyAdmin, async (req, res) => {
+router.put('/categories', adminAuth, async (req, res) => {
   try {
     const { categories } = req.body;
     if (!categories) {
