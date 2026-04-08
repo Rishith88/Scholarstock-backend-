@@ -31,6 +31,8 @@ app.use(cors({
   },
   credentials: true
 }));
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true }));
 // Database connection
 const connectDB = async () => {
   try {

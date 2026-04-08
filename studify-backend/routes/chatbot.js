@@ -28,6 +28,10 @@ async function callAI(messages) {
   const cerebrasKey = process.env.CEREBRAS_API_KEY;
   const groqKey     = process.env.GROQ_API_KEY;
 
+  if (!cerebrasKey && !groqKey) {
+    return offlineFallback(messages);
+  }
+
   if (cerebrasKey) {
     try {
       console.log('[CHATBOT] Trying Cerebras...');
@@ -69,9 +73,23 @@ async function callAI(messages) {
     }
   }
 
-  throw new Error('No AI API key configured. Set CEREBRAS_API_KEY or GROQ_API_KEY.');
+  return offlineFallback(messages);
 }
 
+function offlineFallback(messages) {
+  const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content || '';
+  const generic =
+`I'm here and ready to help with study materials, plans, and exam prep.
+- To browse materials, go to Categories and pick your exam.
+- For rentals: 19/day (school), 29/day (premium), 39/day (advanced).
+- Ask any question (e.g., "Explain Newton's laws" or "Plan JEE Physics for 2 weeks").
+
+Your message:
+${lastUserMsg ? `“${lastUserMsg}”` : '(no message found)'}
+
+Detailed AI answers require an API key. Please add CEREBRAS_API_KEY or GROQ_API_KEY in your service environment to enable full responses.`;
+  return generic;
+}
 router.post('/chat', async (req, res) => {
   try {
     const { message, conversationHistory = [] } = req.body;
