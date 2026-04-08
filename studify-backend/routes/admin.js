@@ -40,7 +40,8 @@ const upload = multer({
 router.post('/verify-vault', (req, res) => {
   try {
     const { vaultCode } = req.body;
-    const envVaultCode = process.env.ADMIN_VAULT_CODE || 'ADMIN2026';
+    // Check both ADMIN_VAULT_CODE and VAULT_CODE for compatibility with Render environment
+    const envVaultCode = process.env.VAULT_CODE || process.env.ADMIN_VAULT_CODE || 'ADMIN2026';
     
     if (vaultCode && vaultCode.toUpperCase() === envVaultCode.toUpperCase()) {
       res.json({ success: true });
