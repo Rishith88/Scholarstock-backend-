@@ -18,6 +18,10 @@ exports.verifyToken = async (req, res, next) => {
     }
 
     const token = authHeader.split(' ')[1];
+    if (!token || token === 'null' || token === 'undefined') {
+      return res.status(401).json({ success: false, message: 'Access denied. Invalid token format.' });
+    }
+
     const decoded = jwt.verify(token, JWT_SECRET);
     
     // Check if it's an admin token (from routes/admin.js login)
@@ -49,6 +53,38 @@ exports.verifyToken = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Token expired' });
     }
     return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+// Optional auth - doesn't require token but adds user if present
+exports.optionalAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return next();
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (!token || token === 'null' || token === 'undefined') {
+      return next();
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    
+    if (decoded.role === 'admin') {
+      req.user = { role: 'admin', username: decoded.username };
+    } else if (decoded.userId) {
+      const user = await User.findById(decoded.userId).select('-password');
+      if (user && user.isActive) {
+        req.user = user;
+        req.userId = user._id;
+      }
+    }
+    
+    next();
+  } catch (error) {
+    next();
   }
 };
 
