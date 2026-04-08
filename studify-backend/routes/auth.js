@@ -4,10 +4,10 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const { generateToken } = require('../middleware/auth');
 
-// POST /api/auth/signup
-router.post('/signup', async (req, res) => {
+// POST /api/auth/register
+router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, username, phone, referredByUsername } = req.body;
+    const { name, email, password, referredByUsername } = req.body;
 
     // Check if user already exists
     const userExists = await User.findOne({ email: email.toLowerCase() });
@@ -15,11 +15,13 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ success: false, message: 'User already exists with this email' });
     }
 
-    if (username) {
-      const usernameExists = await User.findOne({ username: username.toLowerCase() });
-      if (usernameExists) {
-        return res.status(400).json({ success: false, message: 'Username is already taken' });
-      }
+    // Auto-generate username from email if not provided
+    let finalUsername = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '');
+    
+    // Check if username exists, append random if needed
+    const usernameExists = await User.findOne({ username: finalUsername });
+    if (usernameExists) {
+      finalUsername = finalUsername + Math.floor(Math.random() * 1000);
     }
 
     // Handle referral
@@ -33,8 +35,7 @@ router.post('/signup', async (req, res) => {
       name,
       email: email.toLowerCase(),
       password,
-      username: username ? username.toLowerCase() : undefined,
-      phone,
+      username: finalUsername,
       referredByUsername: referredByUser ? referredByUsername.toLowerCase() : null,
       referredBy: referredByUser ? referredByUser._id : null
     });
