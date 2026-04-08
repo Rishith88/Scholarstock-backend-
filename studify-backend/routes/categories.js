@@ -3,7 +3,21 @@
 const express = require('express');
 const router = express.Router();
 const Material = require('../models/Material');
-const { SUBCATEGORIES } = require('../models/Material');
+const path = require('path');
+const fs = require('fs');
+
+// Helper to get subcategories from JSON or model fallback
+function getSubcategoriesData() {
+  try {
+    const dataPath = path.join(__dirname, '../data/categories.json');
+    if (fs.existsSync(dataPath)) {
+      return JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+    }
+  } catch (err) {
+    console.error('Error reading categories.json:', err);
+  }
+  return require('../models/Material').SUBCATEGORIES || {};
+}
 
 // Auth middleware (if needed for protected routes)
 const auth = require('../middleware/auth');
@@ -14,6 +28,7 @@ const auth = require('../middleware/auth');
 // ============================================
 router.get('/structure', async (req, res) => {
   try {
+    const SUBCATEGORIES = getSubcategoriesData();
     // Clone the categories object to avoid modifying the original
     const categoriesWithFreeResources = {};
     
@@ -51,6 +66,7 @@ router.get('/structure', async (req, res) => {
 router.get('/:category/subcategories', async (req, res) => {
   try {
     const { category } = req.params;
+    const SUBCATEGORIES = getSubcategoriesData();
     
     let subcategories = SUBCATEGORIES[category];
     

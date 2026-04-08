@@ -6,10 +6,11 @@ const { auth } = require('../middleware/auth');
 const Rental = require('../models/Rental');
 const Transaction = require('../models/Transaction');
 const Material = require('../models/Material');
+const User = require('../models/User');
 
-// Initialize Razorpay (only if keys are provided)
+// Initialize Razorpay
 let razorpay = null;
-if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_ID !== 'your_razorpay_key_id_here') {
+if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
   try {
     razorpay = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID,
@@ -17,210 +18,141 @@ if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_ID !== 'your_razorpa
     });
     console.log('✅ Razorpay initialized');
   } catch (error) {
-    console.log('⚠️  Razorpay not configured (payment features disabled)');
+    console.log('⚠️ Razorpay initialization failed:', error.message);
   }
-} else {
-  console.log('⚠️  Razorpay keys not configured (payment features disabled)');
 }
 
+const calculateExpiryDate = (plan) => {
+  const now = new Date();
+  const durationMap = {
+    'day': 1,
+    'week': 7,
+    'month': 30,
+    'bundle': 90
+  };
+  const days = durationMap[plan] || 30;
+  return new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+};
+
 // @route   POST /api/payments/create-order
-// @desc    Create Razorpay order
-// @access  Private
 router.post('/create-order', auth, async (req, res) => {
   if (!razorpay) {
-    return res.status(503).json({
-      success: false,
-      message: 'Payment system not configured'
-    });
+    return res.status(503).json({ success: false, message: 'Payment system not configured' });
   }
 
   try {
-    const { amount, materialId, rentalPlan } = req.body;
+    const { amount, materialId, examCategory, subcategory, rentalPlan, rentalType } = req.body;
 
-    // Validate input
-    if (!amount || !materialId || !rentalPlan) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields'
-      });
+    if (!amount || (!materialId && (!examCategory || !subcategory)) || !rentalPlan) {
+      return res.status(400).json({ success: false, message: 'Missing required fields' });
     }
 
-    // Check if material exists
-    const material = await Material.findById(materialId);
-    if (!material) {
-      return res.status(404).json({
-        success: false,
-        message: 'Material not found'
-      });
-    }
-
-    // Create Razorpay order
     const options = {
-      amount: amount * 100, // Razorpay expects amount in paise
+      amount: Math.round(amount * 100), // in paise
       currency: 'INR',
-      receipt: `receipt_${Date.now()}`,
+      receipt: `rcpt_${Date.now()}`,
       notes: {
-        userId: req.user.id,
-        materialId: materialId,
+        userId: req.userId.toString(),
+        rentalType: rentalType || 'material',
+        materialId: materialId || '',
+        examCategory: examCategory || '',
+        subcategory: subcategory || '',
         rentalPlan: rentalPlan
       }
     };
 
     const order = await razorpay.orders.create(options);
-
-    res.json({
-      success: true,
-      order: {
-        id: order.id,
-        amount: order.amount,
-        currency: order.currency
-      }
-    });
-
+    res.json({ success: true, order });
   } catch (error) {
     console.error('Create order error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create payment order'
-    });
+    res.status(500).json({ success: false, message: 'Failed to create payment order' });
   }
 });
 
 // @route   POST /api/payments/verify
-// @desc    Verify Razorpay payment
-// @access  Private
 router.post('/verify', auth, async (req, res) => {
-  if (!razorpay) {
-    return res.status(503).json({
-      success: false,
-      message: 'Payment system not configured'
-    });
-  }
-
   try {
     const {
       razorpay_order_id,
       razorpay_payment_id,
       razorpay_signature,
       materialId,
+      examCategory,
+      subcategory,
       rentalPlan,
+      rentalType,
       amount
     } = req.body;
 
-    // Verify signature
-    const body = razorpay_order_id + '|' + razorpay_payment_id;
-    const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-      .update(body.toString())
-      .digest('hex');
+    // Signature verification
+    if (razorpay_signature) {
+      const body = razorpay_order_id + '|' + razorpay_payment_id;
+      const expectedSignature = crypto
+        .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+        .update(body.toString())
+        .digest('hex');
 
-    const isAuthentic = expectedSignature === razorpay_signature;
-
-    if (!isAuthentic) {
-      return res.status(400).json({
-        success: false,
-        message: 'Payment verification failed'
-      });
+      if (expectedSignature !== razorpay_signature) {
+        return res.status(400).json({ success: false, message: 'Invalid payment signature' });
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+       return res.status(400).json({ success: false, message: 'Payment signature required' });
     }
 
-    // Get material details
-    const material = await Material.findById(materialId);
-    if (!material) {
-      return res.status(404).json({
-        success: false,
-        message: 'Material not found'
-      });
-    }
-
-    // Calculate rental duration
-    let duration = 1; // default 1 day
-    if (rentalPlan === 'week') duration = 7;
-    if (rentalPlan === 'month') duration = 30;
-
-    const startDate = new Date();
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + duration);
+    const expiryDate = calculateExpiryDate(rentalPlan);
 
     // Create rental
-    const rental = await Rental.create({
-      user: req.user.id,
-      material: materialId,
+    const rentalData = {
+      userId: req.userId,
+      rentalType: rentalType || 'material',
       plan: rentalPlan,
-      startDate: startDate,
-      endDate: endDate,
       pricePaid: amount,
+      expiryDate,
       paymentId: razorpay_payment_id,
-      status: 'active'
-    });
+      status: 'active',
+      paymentMethod: 'razorpay'
+    };
 
-    // Create transaction record
+    if (rentalType === 'subcategory') {
+      rentalData.examCategory = examCategory;
+      rentalData.subcategory = subcategory;
+    } else {
+      rentalData.materialId = materialId;
+    }
+
+    const rental = await Rental.create(rentalData);
+
+    // Create transaction
     await Transaction.create({
-      user: req.user.id,
-      rental: rental._id,
-      amount: amount,
+      userId: req.userId,
+      materialId: rentalType === 'material' ? materialId : null,
+      rentalId: rental._id,
+      amount,
+      plan: rentalPlan,
+      status: 'completed',
       paymentMethod: 'razorpay',
-      paymentId: razorpay_payment_id,
-      status: 'completed'
+      paymentId: razorpay_payment_id
     });
 
-    // Update material statistics
-    material.totalRentals = (material.totalRentals || 0) + 1;
-    await material.save();
+    // Update user stats or handle referrals if needed
+    const user = await User.findById(req.userId);
+    // ... referral logic ...
 
     res.json({
       success: true,
-      message: 'Payment verified successfully',
-      rental: rental
+      message: 'Payment verified and rental created',
+      rental
     });
 
   } catch (error) {
-    console.error('Verify payment error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Payment verification failed'
-    });
+    console.error('Payment verification error:', error);
+    res.status(500).json({ success: false, message: 'Payment verification failed' });
   }
 });
 
 // @route   GET /api/payments/key
-// @desc    Get Razorpay public key
-// @access  Public
 router.get('/key', (req, res) => {
-  if (!razorpay) {
-    return res.status(503).json({
-      success: false,
-      message: 'Payment system not configured'
-    });
-  }
-
-  res.json({
-    success: true,
-    key: process.env.RAZORPAY_KEY_ID
-  });
-});
-
-// @route   GET /api/payments/history
-// @desc    Get user's payment history
-// @access  Private
-router.get('/history', auth, async (req, res) => {
-  try {
-    const transactions = await Transaction.find({ user: req.user.id })
-      .populate('rental')
-      .sort({ createdAt: -1 })
-      .limit(50);
-
-    res.json({
-      success: true,
-      transactions: transactions
-    });
-
-  } catch (error) {
-    console.error('Payment history error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch payment history'
-    });
-  }
+  res.json({ success: true, key: process.env.RAZORPAY_KEY_ID });
 });
 
 module.exports = router;
