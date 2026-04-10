@@ -539,10 +539,10 @@ router.post('/start', auth, verifyAdmin, async (req, res) => {
   try {
     const { category, subcategory, topicType } = req.body;
     
-    if (!category || !subcategory) {
+    if (!category) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Category and subcategory required' 
+        message: 'Category is required' 
       });
     }
     
@@ -755,8 +755,9 @@ async function startCollection() {
 // Generate content using specific provider - TOPIC-COVERAGE FOCUSED
 async function generateContent(provider, index) {
   const { category, subcategory, topicType } = contentEngine.currentTopic;
+  const topicLabel = subcategory || `All ${category} topics`;
   
-  const prompt = `You are creating COMPREHENSIVE educational content for ${category} - ${subcategory}.
+  const prompt = `You are creating COMPREHENSIVE educational content for ${category} - ${topicLabel}.
 
 CURRENT OBJECTIVE: Generate COMPLETE topic coverage (not random content)
 
@@ -775,22 +776,27 @@ Track what you've already covered. If the topic is FULLY covered, set topicCompl
 
 Generate content as JSON:
 {
-  "title": "${subcategory}: [Specific Topic/Formula Sheet ${index}]",
+  "title": "${topicLabel}: [Specific Topic/Formula Sheet ${index}]",
   "category": "${category}",
-  "subcategory": "${subcategory}",
+  "subcategory": "${topicLabel}",
   "difficulty": "Easy or Medium or Hard",
   "content": "The actual educational content (formulas, explanations, practice questions)",
   "formulas": ["list all formulas included"],
   "topicsCovered": ["list topics covered in this sheet"],
-  "topicComplete": false (set true if ENTIRE ${subcategory} is fully covered),
+  "topicComplete": false (set true if ENTIRE ${topicLabel} is fully covered),
   "references": ["HC Verma Vol 1", "NCERT Class 11", "etc"],
   "suggestedPrice": 40-120 (based on depth and difficulty),
   "pages": 2-5
 }`;
 
   try {
+    let response;
     switch (provider.type) {
       case 'openrouter':
+      case 'cerebras':
+      case 'github':
+      case 'nvidia':
+      case 'sambanova': {
         response = await axios.post(provider.endpoint, {
           model: provider.model,
           messages: [{ role: 'user', content: prompt }],
@@ -804,11 +810,11 @@ Generate content as JSON:
             'X-Title': 'ScholarStock Content Engine'
           }
         });
+        const contentText = response.data.choices[0].message.content;
+        return parseContent(contentText, index);
+      }
         
-        const content = response.data.choices[0].message.content;
-        return parseContent(content, index);
-        
-      case 'huggingface':
+      case 'huggingface': {
         response = await axios.post(`${provider.endpoint}${provider.model}`, {
           inputs: prompt,
           parameters: { max_new_tokens: 2000, temperature: 0.7 }
@@ -818,14 +824,14 @@ Generate content as JSON:
             'Content-Type': 'application/json'
           }
         });
-        
         return parseContent(response.data[0]?.generated_text || '', index);
+      }
         
       case 'together':
       case 'deepseek':
       case 'fireworks':
       case 'groq':
-      case 'mistral':
+      case 'mistral': {
         response = await axios.post(provider.endpoint, {
           model: provider.model,
           messages: [{ role: 'user', content: prompt }],
@@ -837,18 +843,18 @@ Generate content as JSON:
             'Content-Type': 'application/json'
           }
         });
-        
         return parseContent(response.data.choices[0].message.content, index);
+      }
         
-      case 'gemini':
+      case 'gemini': {
         response = await axios.post(`${provider.endpoint}${provider.model}:generateContent?key=${provider.key}`, {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { maxOutputTokens: 2000, temperature: 0.7 }
         });
-        
         return parseContent(response.data.candidates[0].content.parts[0].text, index);
+      }
         
-      case 'ai21':
+      case 'ai21': {
         response = await axios.post(`${provider.endpoint}${provider.model}/complete`, {
           prompt: prompt,
           maxTokens: 2000,
@@ -859,8 +865,8 @@ Generate content as JSON:
             'Content-Type': 'application/json'
           }
         });
-        
         return parseContent(response.data.completions[0].data.text, index);
+      }
         
       default:
         throw new Error(`Unknown provider type: ${provider.type}`);
