@@ -2,6 +2,13 @@ const express = require('express');
 const router = express.Router();
 const { auth, verifyAdmin } = require('../middleware/auth');
 const axios = require('axios');
+const PDFDocument = require('pdfkit');
+const fs = require('fs');
+const path = require('path');
+
+// Ensure uploads/generated directory exists
+const GENERATED_DIR = path.join(__dirname, '../uploads/generated');
+if (!fs.existsSync(GENERATED_DIR)) fs.mkdirSync(GENERATED_DIR, { recursive: true });
 
 // AI Provider Pool - HIGH QUALITY MODELS ONLY (Tier 1 & 2)
 class AIProviderPool {
@@ -142,8 +149,52 @@ class AIProviderPool {
         quality: 'tier1'
       },
       
-      // ⚠️ GROQ & CEREBRAS EXCLUDED - Reserved for main features (chatbot, doubt, mock tests)
-      // Do NOT add content engine load to these primary providers
+      // ==================== GROQ (Fast - Active for Content Engine) ====================
+      {
+        name: 'groq-llama3.3-70b',
+        type: 'groq',
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        key: process.env.GROQ_API_KEY,
+        model: 'llama-3.3-70b-versatile',
+        usage: 0,
+        limit: 500,
+        enabled: !!process.env.GROQ_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'groq-llama3.1-8b',
+        type: 'groq',
+        endpoint: 'https://api.groq.com/openai/v1/chat/completions',
+        key: process.env.GROQ_API_KEY,
+        model: 'llama-3.1-8b-instant',
+        usage: 0,
+        limit: 500,
+        enabled: !!process.env.GROQ_API_KEY,
+        quality: 'tier2'
+      },
+      // ==================== CEREBRAS (Ultra Fast - Active for Content Engine) ====================
+      {
+        name: 'cerebras-llama3.3-70b',
+        type: 'cerebras',
+        endpoint: 'https://api.cerebras.ai/v1/chat/completions',
+        key: process.env.CEREBRAS_API_KEY,
+        model: 'llama3.3-70b',
+        usage: 0,
+        limit: 1000,
+        enabled: !!process.env.CEREBRAS_API_KEY,
+        quality: 'tier1'
+      },
+      {
+        name: 'cerebras-qwen3-32b',
+        type: 'cerebras',
+        endpoint: 'https://api.cerebras.ai/v1/chat/completions',
+        key: process.env.CEREBRAS_API_KEY,
+        model: 'qwen3-32b',
+        usage: 0,
+        limit: 1000,
+        enabled: !!process.env.CEREBRAS_API_KEY,
+        quality: 'tier1'
+      },
       
       // ==================== HUGGINGFACE (High-Quality Models) ====================
       {
@@ -654,26 +705,127 @@ router.post('/approve', auth, verifyAdmin, async (req, res) => {
     
     let published = 0;
     for (const item of items) {
-      if (item.approved) {
-        await Material.create({
-          title: item.title,
-          category: item.category,
-          subcategory: item.subcategory,
-          pricePerDay: item.suggestedPrice,
-          fileUrl: item.fileUrl,
-          description: item.description,
-          difficulty: item.difficulty,
-          pages: item.pages || 1
-        });
-        published++;
-      }
+      if (!item.approved) continue;
+      
+      // Generate watermarked PDF
+      const pdfPath = await generateWatermarkedPDF(item);
+      
+      await Material.create({
+        title: item.title,
+        examCategory: item.category,
+        subcategory: item.subcategory,
+        examLabel: item.category,
+        pricePerDay: item.suggestedPrice || 60,
+        pdfUrl: pdfPath,
+        description: item.content ? item.content.substring(0, 500) : `${item.category} - ${item.subcategory} study material`,
+        difficulty: item.difficulty || 'Medium',
+        pages: item.pages || 3,
+        author: 'ScholarStock AI',
+        isActive: true
+      });
+      published++;
     }
     
     res.json({ success: true, message: `${published} items published`, published });
   } catch (err) {
+    console.error('Approve error:', err);
     res.status(500).json({ success: false, message: err.message });
   }
 });
+
+// Generate a watermarked PDF from content item
+function generateWatermarkedPDF(item) {
+  return new Promise((resolve, reject) => {
+    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
+    const filepath = path.join(GENERATED_DIR, filename);
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const stream = fs.createWriteStream(filepath);
+    
+    doc.pipe(stream);
+    
+    // ── HEADER ──
+    doc.rect(0, 0, doc.page.width, 70).fill('#0f172a');
+    doc.fontSize(22).fillColor('#60a5fa').font('Helvetica-Bold')
+       .text('ScholarStock', 50, 20);
+    doc.fontSize(10).fillColor('#94a3b8').font('Helvetica')
+       .text('Premium Study Materials', 50, 46);
+    doc.fontSize(10).fillColor('#ffffff')
+       .text(`${item.category} • ${item.subcategory}`, 0, 30, { align: 'right', width: doc.page.width - 50 });
+    
+    doc.moveDown(3);
+    
+    // ── TITLE ──
+    doc.fontSize(18).fillColor('#1e293b').font('Helvetica-Bold')
+       .text(item.title, { align: 'center' });
+    doc.moveDown(0.5);
+    
+    // ── META BADGES ──
+    doc.fontSize(10).fillColor('#64748b').font('Helvetica')
+       .text(`Difficulty: ${item.difficulty || 'Medium'}  •  Pages: ${item.pages || 3}  •  Price: ₹${item.suggestedPrice || 60}/day`, { align: 'center' });
+    
+    doc.moveDown(1);
+    doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
+    doc.moveDown(1);
+    
+    // ── CONTENT ──
+    if (item.content) {
+      doc.fontSize(11).fillColor('#1e293b').font('Helvetica')
+         .text(item.content, { align: 'left', lineGap: 4 });
+      doc.moveDown(1);
+    }
+    
+    // ── FORMULAS SECTION ──
+    if (item.formulas && item.formulas.length > 0) {
+      doc.moveDown(0.5);
+      doc.fontSize(13).fillColor('#3b82f6').font('Helvetica-Bold').text('Key Formulas');
+      doc.moveDown(0.3);
+      item.formulas.forEach((f, i) => {
+        doc.fontSize(10).fillColor('#1e293b').font('Helvetica')
+           .text(`${i + 1}. ${f}`, { indent: 20, lineGap: 3 });
+      });
+      doc.moveDown(1);
+    }
+    
+    // ── REFERENCES ──
+    if (item.references && item.references.length > 0) {
+      doc.fontSize(11).fillColor('#64748b').font('Helvetica-Bold').text('References:');
+      doc.fontSize(10).fillColor('#64748b').font('Helvetica')
+         .text(item.references.join(', '));
+      doc.moveDown(1);
+    }
+    
+    // ── WATERMARK (diagonal, every page) ──
+    const addWatermark = () => {
+      doc.save();
+      doc.opacity(0.07);
+      doc.fontSize(60).fillColor('#3b82f6').font('Helvetica-Bold');
+      // Diagonal watermark repeated across page
+      for (let y = 100; y < doc.page.height; y += 200) {
+        for (let x = -100; x < doc.page.width; x += 350) {
+          doc.save();
+          doc.translate(x, y).rotate(-35);
+          doc.text('ScholarStock', 0, 0);
+          doc.restore();
+        }
+      }
+      doc.restore();
+      doc.opacity(1);
+    };
+    
+    addWatermark();
+    
+    // ── FOOTER ──
+    const footerY = doc.page.height - 40;
+    doc.rect(0, footerY - 10, doc.page.width, 50).fill('#0f172a');
+    doc.fontSize(8).fillColor('#94a3b8').font('Helvetica')
+       .text('© ScholarStock • scholarstock.com • Unauthorized distribution prohibited', 50, footerY, { align: 'center', width: doc.page.width - 100 });
+    
+    doc.end();
+    
+    stream.on('finish', () => resolve(`uploads/generated/${filename}`));
+    stream.on('error', reject);
+  });
+}
 
 // Background collection - TOPIC-BASED
 async function startCollection() {
