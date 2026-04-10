@@ -5,10 +5,14 @@ const axios = require('axios');
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 
-// Ensure uploads/generated directory exists
-const GENERATED_DIR = path.join(__dirname, '../uploads/generated');
-if (!fs.existsSync(GENERATED_DIR)) fs.mkdirSync(GENERATED_DIR, { recursive: true });
+// Supabase client for PDF storage
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY
+);
+const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'materials';
 
 // AI Provider Pool - HIGH QUALITY MODELS ONLY (Tier 1 & 2)
 class AIProviderPool {
@@ -735,15 +739,40 @@ router.post('/approve', auth, verifyAdmin, async (req, res) => {
 });
 
 // Generate a watermarked PDF from content item
+// Generate a watermarked PDF and upload to Supabase Storage
 function generateWatermarkedPDF(item) {
   return new Promise((resolve, reject) => {
-    const filename = `${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
-    const filepath = path.join(GENERATED_DIR, filename);
+    const filename = `generated/${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
     const doc = new PDFDocument({ margin: 50, size: 'A4' });
-    const stream = fs.createWriteStream(filepath);
-    
-    doc.pipe(stream);
-    
+    const chunks = [];
+
+    doc.on('data', chunk => chunks.push(chunk));
+    doc.on('error', reject);
+    doc.on('end', async () => {
+      try {
+        const buffer = Buffer.concat(chunks);
+
+        // Upload to Supabase Storage
+        const { data, error } = await supabase.storage
+          .from(SUPABASE_BUCKET)
+          .upload(filename, buffer, {
+            contentType: 'application/pdf',
+            upsert: false,
+          });
+
+        if (error) throw error;
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from(SUPABASE_BUCKET)
+          .getPublicUrl(filename);
+
+        resolve(urlData.publicUrl);
+      } catch (err) {
+        reject(err);
+      }
+    });
+
     // ── HEADER ──
     doc.rect(0, 0, doc.page.width, 70).fill('#0f172a');
     doc.fontSize(22).fillColor('#60a5fa').font('Helvetica-Bold')
@@ -752,32 +781,31 @@ function generateWatermarkedPDF(item) {
        .text('Premium Study Materials', 50, 46);
     doc.fontSize(10).fillColor('#ffffff')
        .text(`${item.category} • ${item.subcategory}`, 0, 30, { align: 'right', width: doc.page.width - 50 });
-    
+
     doc.moveDown(3);
-    
+
     // ── TITLE ──
     doc.fontSize(18).fillColor('#1e293b').font('Helvetica-Bold')
        .text(item.title, { align: 'center' });
     doc.moveDown(0.5);
-    
-    // ── META BADGES ──
+
+    // ── META ──
     doc.fontSize(10).fillColor('#64748b').font('Helvetica')
-       .text(`Difficulty: ${item.difficulty || 'Medium'}  •  Pages: ${item.pages || 3}  •  Price: ₹${item.suggestedPrice || 60}/day`, { align: 'center' });
-    
+       .text(`Difficulty: ${item.difficulty || 'Medium'}  •  Pages: ${item.pages || 3}`, { align: 'center' });
+
     doc.moveDown(1);
     doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
     doc.moveDown(1);
-    
+
     // ── CONTENT ──
     if (item.content) {
       doc.fontSize(11).fillColor('#1e293b').font('Helvetica')
          .text(item.content, { align: 'left', lineGap: 4 });
       doc.moveDown(1);
     }
-    
-    // ── FORMULAS SECTION ──
+
+    // ── FORMULAS ──
     if (item.formulas && item.formulas.length > 0) {
-      doc.moveDown(0.5);
       doc.fontSize(13).fillColor('#3b82f6').font('Helvetica-Bold').text('Key Formulas');
       doc.moveDown(0.3);
       item.formulas.forEach((f, i) => {
@@ -786,7 +814,7 @@ function generateWatermarkedPDF(item) {
       });
       doc.moveDown(1);
     }
-    
+
     // ── REFERENCES ──
     if (item.references && item.references.length > 0) {
       doc.fontSize(11).fillColor('#64748b').font('Helvetica-Bold').text('References:');
@@ -794,37 +822,29 @@ function generateWatermarkedPDF(item) {
          .text(item.references.join(', '));
       doc.moveDown(1);
     }
-    
-    // ── WATERMARK (diagonal, every page) ──
-    const addWatermark = () => {
-      doc.save();
-      doc.opacity(0.07);
-      doc.fontSize(60).fillColor('#3b82f6').font('Helvetica-Bold');
-      // Diagonal watermark repeated across page
-      for (let y = 100; y < doc.page.height; y += 200) {
-        for (let x = -100; x < doc.page.width; x += 350) {
-          doc.save();
-          doc.translate(x, y).rotate(-35);
-          doc.text('ScholarStock', 0, 0);
-          doc.restore();
-        }
+
+    // ── WATERMARK ──
+    doc.save();
+    doc.opacity(0.07);
+    doc.fontSize(60).fillColor('#3b82f6').font('Helvetica-Bold');
+    for (let y = 100; y < doc.page.height; y += 200) {
+      for (let x = -100; x < doc.page.width; x += 350) {
+        doc.save();
+        doc.translate(x, y).rotate(-35);
+        doc.text('ScholarStock', 0, 0);
+        doc.restore();
       }
-      doc.restore();
-      doc.opacity(1);
-    };
-    
-    addWatermark();
-    
+    }
+    doc.restore();
+    doc.opacity(1);
+
     // ── FOOTER ──
     const footerY = doc.page.height - 40;
     doc.rect(0, footerY - 10, doc.page.width, 50).fill('#0f172a');
     doc.fontSize(8).fillColor('#94a3b8').font('Helvetica')
        .text('© ScholarStock • scholarstock.com • Unauthorized distribution prohibited', 50, footerY, { align: 'center', width: doc.page.width - 100 });
-    
+
     doc.end();
-    
-    stream.on('finish', () => resolve(`uploads/generated/${filename}`));
-    stream.on('error', reject);
   });
 }
 

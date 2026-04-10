@@ -8,35 +8,26 @@ const { verifyToken, verifyAdmin } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const { createClient } = require('@supabase/supabase-js');
 
 // Combined middleware for cleaner admin routes
 const adminAuth = [verifyToken, verifyAdmin];
 
-// Multer storage for local PDF uploads
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const dir = 'uploads/pdfs/';
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
-    cb(null, dir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Supabase client
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY
+);
+const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'materials';
 
+// Multer memory storage (buffer → Supabase)
 const upload = multer({
-  storage: storage,
+  storage: multer.memoryStorage(),
   fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only PDF files are allowed'), false);
-    }
+    if (file.mimetype === 'application/pdf') cb(null, true);
+    else cb(new Error('Only PDF files are allowed'), false);
   },
-  limits: { fileSize: 50 * 1024 * 1024 } // 50MB limit
+  limits: { fileSize: 50 * 1024 * 1024 }
 });
 
 // POST /api/admin/verify-vault - Verify vault code from environment variable
@@ -183,15 +174,30 @@ router.post('/materials', adminAuth, upload.single('pdf'), async (req, res) => {
       return res.status(400).json({ success: false, message: 'PDF file is required' });
     }
 
+    // Upload buffer to Supabase Storage
+    const filename = `pdfs/${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
+    const { error: uploadError } = await supabase.storage
+      .from(SUPABASE_BUCKET)
+      .upload(filename, req.file.buffer, {
+        contentType: 'application/pdf',
+        upsert: false,
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data: urlData } = supabase.storage
+      .from(SUPABASE_BUCKET)
+      .getPublicUrl(filename);
+
     const material = new Material({
       title,
       examCategory: category,
       subcategory,
-      examLabel: category, // Using category as label by default
+      examLabel: category,
       pricePerDay: parseFloat(price),
       description,
       author: author || 'Admin',
-      pdfUrl: req.file.path.replace(/\\/g, '/'), // Local path
+      pdfUrl: urlData.publicUrl,
       isActive: true
     });
 
