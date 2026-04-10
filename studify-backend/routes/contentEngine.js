@@ -14,6 +14,21 @@ const supabase = createClient(
 );
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'materials';
 
+// Auto-create bucket if it doesn't exist
+async function ensureBucket() {
+  try {
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const exists = buckets && buckets.find(b => b.name === SUPABASE_BUCKET);
+    if (!exists) {
+      await supabase.storage.createBucket(SUPABASE_BUCKET, { public: true });
+      console.log(`✅ Supabase bucket '${SUPABASE_BUCKET}' created`);
+    }
+  } catch (e) {
+    console.log('Supabase bucket check:', e.message);
+  }
+}
+ensureBucket();
+
 // AI Provider Pool - HIGH QUALITY MODELS ONLY (Tier 1 & 2)
 class AIProviderPool {
   constructor() {

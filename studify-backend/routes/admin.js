@@ -20,6 +20,20 @@ const supabase = createClient(
 );
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'materials';
 
+// Auto-create bucket if it doesn't exist
+(async () => {
+  try {
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const exists = buckets && buckets.find(b => b.name === SUPABASE_BUCKET);
+    if (!exists) {
+      await supabase.storage.createBucket(SUPABASE_BUCKET, { public: true });
+      console.log(`✅ Supabase bucket '${SUPABASE_BUCKET}' created`);
+    }
+  } catch (e) {
+    console.log('Supabase bucket check:', e.message);
+  }
+})();
+
 // Multer memory storage (buffer → Supabase)
 const upload = multer({
   storage: multer.memoryStorage(),
