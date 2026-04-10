@@ -716,6 +716,23 @@ router.get('/preview', auth, verifyAdmin, async (req, res) => {
   });
 });
 
+// DELETE /api/content-engine/item/:index
+router.delete('/item/:index', auth, verifyAdmin, async (req, res) => {
+  const index = parseInt(req.params.index);
+  if (isNaN(index) || index < 0 || index >= contentEngine.collected.length) {
+    return res.status(400).json({ success: false, message: 'Invalid index' });
+  }
+  
+  contentEngine.collected.splice(index, 1);
+  res.json({ success: true, message: 'Item removed from queue' });
+});
+
+// DELETE /api/content-engine/clear
+router.delete('/clear', auth, verifyAdmin, async (req, res) => {
+  contentEngine.collected = [];
+  res.json({ success: true, message: 'Queue cleared' });
+});
+
 // POST /api/content-engine/preview-pdf-stream
 router.post('/preview-pdf-stream', auth, verifyAdmin, async (req, res) => {
   try {
