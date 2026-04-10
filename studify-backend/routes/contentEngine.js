@@ -716,6 +716,24 @@ router.get('/preview', auth, verifyAdmin, async (req, res) => {
   });
 });
 
+// POST /api/content-engine/preview-pdf-stream
+router.post('/preview-pdf-stream', auth, verifyAdmin, async (req, res) => {
+  try {
+    const item = req.body;
+    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename=preview.pdf');
+    
+    doc.pipe(res);
+    renderPdfContent(doc, item);
+    doc.end();
+  } catch (err) {
+    console.error('PDF Preview Error:', err);
+    res.status(500).send('Error generating preview');
+  }
+});
+
 // POST /api/content-engine/approve
 router.post('/approve', auth, verifyAdmin, async (req, res) => {
   try {
@@ -753,7 +771,137 @@ router.post('/approve', auth, verifyAdmin, async (req, res) => {
   }
 });
 
-// Generate a watermarked PDF from content item
+// Helper function to render PDF content (extracted from generateWatermarkedPDF)
+function renderPdfContent(doc, item) {
+  // Load Unicode-compatible font if available
+  let bodyFont = 'Helvetica';
+  let boldFont = 'Helvetica-Bold';
+  
+  const fontPaths = [
+    path.join(__dirname, '../fonts/UnicodeFont.ttf'),
+    'C:/Windows/Fonts/arial.ttf',
+    'C:/Windows/Fonts/segoeui.ttf'
+  ];
+
+  for (const p of fontPaths) {
+    if (fs.existsSync(p)) {
+      try {
+        doc.registerFont('MainFont', p);
+        bodyFont = 'MainFont';
+        const boldPath = p.replace('.ttf', 'bd.ttf');
+        if (fs.existsSync(boldPath)) {
+          doc.registerFont('MainFontBold', boldPath);
+          boldFont = 'MainFontBold';
+        } else {
+          boldFont = 'MainFont';
+        }
+        break;
+      } catch (e) {}
+    }
+  }
+
+  // ── HEADER ──
+  doc.rect(0, 0, doc.page.width, 70).fill('#0f172a');
+  doc.fontSize(22).fillColor('#60a5fa').font(boldFont).text('ScholarStock', 50, 20);
+  doc.fontSize(10).fillColor('#94a3b8').font(bodyFont).text('Premium Study Materials', 50, 46);
+  doc.fontSize(10).fillColor('#ffffff').text(`${item.category} • ${item.subcategory}`, 0, 30, { align: 'right', width: doc.page.width - 50 });
+
+  doc.moveDown(3);
+
+  // ── TITLE ──
+  doc.fontSize(18).fillColor('#1e293b').font(boldFont).text(item.title, { align: 'center' });
+  doc.moveDown(0.5);
+
+  // ── META ──
+  doc.fontSize(10).fillColor('#64748b').font(bodyFont).text(`Difficulty: ${item.difficulty || 'Medium'}  •  Pages: ${item.pages || 3}`, { align: 'center' });
+
+  doc.moveDown(1);
+  doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
+  doc.moveDown(1);
+
+  // ── CONTENT ──
+  if (item.theory) {
+    doc.fontSize(12).fillColor('#1e293b').font(boldFont).text('Concept Overview', { align: 'left' });
+    doc.moveDown(0.3);
+    doc.fontSize(10).fillColor('#334155').font(bodyFont).text(item.theory, { align: 'left', lineGap: 4 });
+    doc.moveDown(1);
+  }
+
+  // ── FORMULAS ──
+  if (item.formulas && item.formulas.length > 0) {
+    doc.fontSize(12).fillColor('#3b82f6').font(boldFont).text('Key Formulas & Constants');
+    doc.moveDown(0.5);
+    doc.rect(50, doc.y, doc.page.width - 100, (item.formulas.length * 20) + 10).fill('#f8fafc');
+    doc.fillColor('#1e293b');
+    item.formulas.forEach((f, i) => {
+      doc.fontSize(10).font(boldFont).text(`${i + 1}. `, 65, doc.y + 5, { continued: true }).font(bodyFont).text(f);
+      doc.moveDown(0.5);
+    });
+    doc.moveDown(1);
+  }
+
+  // ── SOLVED EXAMPLES ──
+  if (item.solvedExamples && item.solvedExamples.length > 0) {
+    doc.fontSize(12).fillColor('#1e293b').font(boldFont).text('Solved Examples');
+    doc.moveDown(0.5);
+    item.solvedExamples.forEach((ex, i) => {
+      doc.fontSize(10).fillColor('#334155').font(boldFont).text(`Example ${i + 1}: `, { continued: true }).font(bodyFont).text(ex.question);
+      doc.moveDown(0.3);
+      doc.fontSize(10).fillColor('#059669').font(boldFont).text('Solution: ', { continued: true }).font(bodyFont).text(ex.solution);
+      doc.moveDown(1);
+    });
+  }
+
+  // ── MCQS ──
+  if (item.mcqs && item.mcqs.length > 0) {
+    doc.addPage();
+    doc.rect(0, 0, doc.page.width, 70).fill('#0f172a');
+    doc.fontSize(22).fillColor('#60a5fa').font(boldFont).text('ScholarStock', 50, 20);
+    doc.fontSize(12).fillColor('#1e293b').font(boldFont).text('Practice Questions (MCQs)', 50, 90);
+    doc.moveDown(1);
+    item.mcqs.forEach((mcq, i) => {
+      doc.fontSize(10).fillColor('#1e293b').font(boldFont).text(`Q${i + 1}. ${mcq.q}`);
+      doc.moveDown(0.3);
+      mcq.options.forEach(opt => {
+        doc.fontSize(9).fillColor('#475569').font(bodyFont).text(opt, { indent: 20 });
+      });
+      doc.moveDown(0.3);
+      doc.fontSize(9).fillColor('#059669').font(boldFont).text(`Correct Answer: ${mcq.answer}`, { indent: 20 });
+      if (mcq.explanation) {
+        doc.fontSize(9).fillColor('#64748b').font(bodyFont).text(`Explanation: ${mcq.explanation}`, { indent: 20 });
+      }
+      doc.moveDown(1);
+    });
+  }
+
+  // ── REFERENCES ──
+  if (item.references && item.references.length > 0) {
+    doc.fontSize(11).fillColor('#64748b').font(boldFont).text('References:');
+    doc.fontSize(10).fillColor('#64748b').font(bodyFont).text(item.references.join(', '));
+    doc.moveDown(1);
+  }
+
+  // ── WATERMARK ──
+  doc.save();
+  doc.opacity(0.07);
+  doc.fontSize(60).fillColor('#3b82f6').font(boldFont);
+  for (let y = 100; y < doc.page.height; y += 200) {
+    for (let x = -100; x < doc.page.width; x += 350) {
+      doc.save();
+      doc.translate(x, y).rotate(-35);
+      doc.text('ScholarStock', 0, 0);
+      doc.restore();
+    }
+  }
+  doc.restore();
+  doc.opacity(1);
+
+  // ── FOOTER ──
+  const footerY = doc.page.height - 40;
+  doc.rect(0, footerY - 10, doc.page.width, 50).fill('#0f172a');
+  doc.fontSize(8).fillColor('#94a3b8').font(bodyFont).text('© ScholarStock • scholarstock.com • Unauthorized distribution prohibited', 50, footerY, { align: 'center', width: doc.page.width - 100 });
+}
+
 // Generate a watermarked PDF and upload to Supabase Storage
 function generateWatermarkedPDF(item) {
   return new Promise((resolve, reject) => {
@@ -766,99 +914,14 @@ function generateWatermarkedPDF(item) {
     doc.on('end', async () => {
       try {
         const buffer = Buffer.concat(chunks);
-
-        // Upload to Supabase Storage
-        const { data, error } = await supabase.storage
-          .from(SUPABASE_BUCKET)
-          .upload(filename, buffer, {
-            contentType: 'application/pdf',
-            upsert: false,
-          });
-
+        const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).upload(filename, buffer, { contentType: 'application/pdf', upsert: false });
         if (error) throw error;
-
-        // Get public URL
-        const { data: urlData } = supabase.storage
-          .from(SUPABASE_BUCKET)
-          .getPublicUrl(filename);
-
+        const { data: urlData } = supabase.storage.from(SUPABASE_BUCKET).getPublicUrl(filename);
         resolve(urlData.publicUrl);
-      } catch (err) {
-        reject(err);
-      }
+      } catch (err) { reject(err); }
     });
 
-    // ── HEADER ──
-    doc.rect(0, 0, doc.page.width, 70).fill('#0f172a');
-    doc.fontSize(22).fillColor('#60a5fa').font('Helvetica-Bold')
-       .text('ScholarStock', 50, 20);
-    doc.fontSize(10).fillColor('#94a3b8').font('Helvetica')
-       .text('Premium Study Materials', 50, 46);
-    doc.fontSize(10).fillColor('#ffffff')
-       .text(`${item.category} • ${item.subcategory}`, 0, 30, { align: 'right', width: doc.page.width - 50 });
-
-    doc.moveDown(3);
-
-    // ── TITLE ──
-    doc.fontSize(18).fillColor('#1e293b').font('Helvetica-Bold')
-       .text(item.title, { align: 'center' });
-    doc.moveDown(0.5);
-
-    // ── META ──
-    doc.fontSize(10).fillColor('#64748b').font('Helvetica')
-       .text(`Difficulty: ${item.difficulty || 'Medium'}  •  Pages: ${item.pages || 3}`, { align: 'center' });
-
-    doc.moveDown(1);
-    doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
-    doc.moveDown(1);
-
-    // ── CONTENT ──
-    if (item.content) {
-      doc.fontSize(11).fillColor('#1e293b').font('Helvetica')
-         .text(item.content, { align: 'left', lineGap: 4 });
-      doc.moveDown(1);
-    }
-
-    // ── FORMULAS ──
-    if (item.formulas && item.formulas.length > 0) {
-      doc.fontSize(13).fillColor('#3b82f6').font('Helvetica-Bold').text('Key Formulas');
-      doc.moveDown(0.3);
-      item.formulas.forEach((f, i) => {
-        doc.fontSize(10).fillColor('#1e293b').font('Helvetica')
-           .text(`${i + 1}. ${f}`, { indent: 20, lineGap: 3 });
-      });
-      doc.moveDown(1);
-    }
-
-    // ── REFERENCES ──
-    if (item.references && item.references.length > 0) {
-      doc.fontSize(11).fillColor('#64748b').font('Helvetica-Bold').text('References:');
-      doc.fontSize(10).fillColor('#64748b').font('Helvetica')
-         .text(item.references.join(', '));
-      doc.moveDown(1);
-    }
-
-    // ── WATERMARK ──
-    doc.save();
-    doc.opacity(0.07);
-    doc.fontSize(60).fillColor('#3b82f6').font('Helvetica-Bold');
-    for (let y = 100; y < doc.page.height; y += 200) {
-      for (let x = -100; x < doc.page.width; x += 350) {
-        doc.save();
-        doc.translate(x, y).rotate(-35);
-        doc.text('ScholarStock', 0, 0);
-        doc.restore();
-      }
-    }
-    doc.restore();
-    doc.opacity(1);
-
-    // ── FOOTER ──
-    const footerY = doc.page.height - 40;
-    doc.rect(0, footerY - 10, doc.page.width, 50).fill('#0f172a');
-    doc.fontSize(8).fillColor('#94a3b8').font('Helvetica')
-       .text('© ScholarStock • scholarstock.com • Unauthorized distribution prohibited', 50, footerY, { align: 'center', width: doc.page.width - 100 });
-
+    renderPdfContent(doc, item);
     doc.end();
   });
 }
@@ -945,37 +1008,66 @@ async function generateContent(provider, index) {
   const { category, subcategory, topicType } = contentEngine.currentTopic;
   const topicLabel = subcategory || `All ${category} topics`;
   
-  const prompt = `You are creating COMPREHENSIVE educational content for ${category} - ${topicLabel}.
+  const prompt = `You are an expert exam content creator for the ${category} exam. 
+  
+  RESEARCH & TRANSFORMATION RULE (CRITICAL):
+  - Step 1: Research (mentally or via search) the highest-quality, copyrighted exam questions from official sources, top prep books (like Princeton Review, Barron's, Kaplan for SAT/GRE, or standard NCERT/HC Verma for Indian exams).
+  - Step 2: Use these high-quality sources ONLY as "inspiration".
+  - Step 3: PARAPHRASE the text entirely. Do not copy sentences. Rewrite the context, the story, and the wording.
+  - Step 4: CHANGE ALL NUMBERS. If a source question uses 5kg and 10m/s, YOU must use 12kg and 15m/s or different values entirely.
+  - Step 5: Generate a brand new question that tests the SAME concept but is legally distinct and original.
+  
+  STRICT RELEVANCE RULE: 
+  - You MUST generate content specifically for ${category} (${topicLabel}). 
+  - DO NOT generate content for unrelated exams like JEE, NEET, or UPSC if the requested category is different (e.g., if SAT is requested, generate SAT content only).
+  - The level of difficulty, question style, and syllabus MUST match ${category} standards.
 
-CURRENT OBJECTIVE: Generate COMPLETE topic coverage (not random content)
+CONTENT TYPE: ${topicType === 'formulas' ? 'FORMULA BANK with derivations and solved examples' : 
+               topicType === 'questions' ? 'PRACTICE QUESTION PAPER with MCQs, short answers, and long answers' : 
+               'COMPLETE PRACTICE SHEET with theory, formulas, solved examples, and practice MCQs'}
 
-CONTENT TYPE: ${topicType === 'formulas' ? 'FORMULA BANK - Include ALL formulas with explanations' : 
-                topicType === 'questions' ? 'PRACTICE QUESTIONS - Cover all difficulty levels' : 
-                'COMPLETE PACKAGE - Formulas + Concepts + Practice Questions'}
+STRICT REQUIREMENTS:
+- Write like a real exam preparation book (Standard ${category} prep material style)
+- Include 8-12 MCQs with 4 options each (mark correct answer)
+- Include 3-5 solved examples with step-by-step solutions
+- Include key formulas with units and conditions
+- Include important concepts/theory (2-3 paragraphs)
+- Use proper scientific and mathematical notation.
+- USE ACTUAL UNICODE SYMBOLS for better professional appearance (e.g., θ, γ, α, β, λ, μ, π, Σ, Δ, ±, ≈, ≠, ≤, ≥, √, ∞).
+- For powers and subscripts, you can use Unicode superscripts/subscripts if possible (e.g., x², y₃) or standard ^ notation (e.g., x^2).
+- Use standard operators: ×, ÷, +, -, =, √().
+- Questions should be exam-relevant and varied difficulty
+- NO filler content, NO generic text
 
-REQUIREMENTS:
-1. Be SYSTEMATIC: Cover topics in logical order
-2. Be COMPREHENSIVE: Don't miss important formulas/concepts
-3. Be ORIGINAL: Create new variations, not copied content
-4. Include references to standard textbooks
-5. Difficulty should progress: Easy fundamentals → Advanced applications
-
-Track what you've already covered. If the topic is FULLY covered, set topicComplete to true.
-
-Generate content as JSON:
+FORMAT YOUR RESPONSE AS VALID JSON ONLY (no markdown, no extra text):
 {
-  "title": "${topicLabel}: [Specific Topic/Formula Sheet ${index}]",
+  "title": "${category} - ${topicLabel}: Practice Sheet ${index}",
   "category": "${category}",
   "subcategory": "${topicLabel}",
-  "difficulty": "Easy or Medium or Hard",
-  "content": "The actual educational content (formulas, explanations, practice questions)",
-  "formulas": ["list all formulas included"],
-  "topicsCovered": ["list topics covered in this sheet"],
-  "topicComplete": false (set true if ENTIRE ${topicLabel} is fully covered),
-  "references": ["HC Verma Vol 1", "NCERT Class 11", "etc"],
-  "suggestedPrice": 5-29 (affordable: Easy=5, Medium=9, Hard=15, max 29),
-  "pages": 2-5
-}`;
+  "difficulty": "Easy|Medium|Hard",
+  "theory": "2-3 paragraphs of clear concept explanation using actual math symbols like θ and √.",
+  "formulas": ["F = m × a (Newton's 2nd Law)", "v² = u² + 2as (Kinematics)", "E = mc²"],
+  "solvedExamples": [
+    {
+      "question": "If the angle θ is 30° and force F is 10N...",
+      "solution": "Step 1: Calculate component F cos(θ)... Answer: 5√3 N"
+    }
+  ],
+  "mcqs": [
+    {
+      "q": "What is the value of the constant π approximately?",
+      "options": ["A) 3.14", "B) 2.71", "C) 1.41", "D) 1.62"],
+      "answer": "A",
+      "explanation": "π (pi) is the ratio of circumference to diameter, approximately 3.14159."
+    }
+  ],
+  "topicsCovered": ["Newton's Laws", "Trigonometry in Physics"],
+  "topicComplete": false,
+  "references": ["Official ${category} Study Guide", "Standard Prep Material"],
+  "suggestedPrice": 9,
+  "pages": 4
+}
+`;
 
   try {
     let response;
@@ -1082,8 +1174,10 @@ function parseContent(content, index) {
       category: data.category || 'JEE',
       subcategory: data.subcategory || 'Physics',
       difficulty: data.difficulty || 'Medium',
-      content: data.content || '',
+      theory: data.theory || '',
       formulas: data.formulas || [],
+      solvedExamples: data.solvedExamples || [],
+      mcqs: data.mcqs || [],
       topicsCovered: data.topicsCovered || [],
       topicComplete: data.topicComplete || false,
       references: data.references || [],
