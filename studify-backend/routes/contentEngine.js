@@ -1190,27 +1190,63 @@ function parseContent(content, index) {
     
     // Post-processing: Clean up common LaTeX if AI ignored instructions
     const latexMap = {
+      // Greek Lowercase
       '\\\\theta': 'θ', '\\\\alpha': 'α', '\\\\beta': 'β', '\\\\gamma': 'γ',
-      '\\\\Delta': 'Δ', '\\\\pi': 'π', '\\\\mu': 'μ', '\\\\sigma': 'σ',
-      '\\\\Omega': 'Ω', '\\\\lambda': 'λ', '\\\\phi': 'φ', '\\\\epsilon': 'ε',
+      '\\\\delta': 'δ', '\\\\epsilon': 'ε', '\\\\zeta': 'ζ', '\\\\eta': 'η',
+      '\\\\iota': 'ι', '\\\\kappa': 'κ', '\\\\lambda': 'λ', '\\\\mu': 'μ',
+      '\\\\nu': 'ν', '\\\\xi': 'ξ', '\\\\pi': 'π', '\\\\rho': 'ρ',
+      '\\\\sigma': 'σ', '\\\\tau': 'τ', '\\\\upsilon': 'υ', '\\\\phi': 'φ',
+      '\\\\chi': 'χ', '\\\\psi': 'ψ', '\\\\omega': 'ω',
+      // Greek Uppercase
+      '\\\\Delta': 'Δ', '\\\\Gamma': 'Γ', '\\\\Theta': 'Θ', '\\\\Lambda': 'Λ',
+      '\\\\Pi': 'Π', '\\\\Sigma': 'Σ', '\\\\Phi': 'Φ', '\\\\Psi': 'Ψ', '\\\\Omega': 'Ω',
+      // Math Operators & Symbols
       '\\\\sqrt': '√', '\\\\approx': '≈', '\\\\neq': '≠', '\\\\le': '≤', '\\\\ge': '≥',
       '\\\\pm': '±', '\\\\times': '×', '\\\\div': '÷', '\\\\cdot': '·',
-      '\\\\degree': '°', '\\\\infty': '∞',
+      '\\\\degree': '°', '\\\\infty': '∞', '\\\\partial': '∂', '\\\\nabla': '∇',
+      '\\\\in': '∈', '\\\\notin': '∉', '\\\\subset': '⊂', '\\\\supset': '⊃',
+      '\\\\cup': '∪', '\\\\cap': '∩', '\\\\forall': '∀', '\\\\exists': '∃',
+      '\\\\implies': '⇒', '\\\\iff': '⇔', '\\\\to': '→', '\\\\angle': '∠',
+      '\\\\perp': '⊥', '\\\\parallel': '∥', '\\\\cong': '≅', '\\\\sim': '∼',
+      '\\\\propto': '∝', '\\\\hbar': 'ħ',
+      // Functions
+      '\\\\cos': 'cos', '\\\\sin': 'sin', '\\\\tan': 'tan', '\\\\sec': 'sec',
+      '\\\\csc': 'csc', '\\\\cot': 'cot', '\\\\arcsin': 'arcsin', '\\\\arccos': 'arccos',
+      '\\\\arctan': 'arctan', '\\\\log': 'log', '\\\\ln': 'ln', '\\\\exp': 'exp',
+      '\\\\lim': 'lim', '\\\\max': 'max', '\\\\min': 'min',
+      // Brackets & Layout
       '\\\\(': '', '\\\\)': '', '\\\\[': '', '\\\\]': '',
-      '\\\\text': '', '\\\\mathbf': '', '\\\\mathrm': '',
-      '\\\\frac': '/' // Very simple fallback
+      '\\\\{': '{', '\\\\}': '}', '\\\\text': '', '\\\\mathbf': '', '\\\\mathrm': '',
+      '\\\\frac': '/', '\\\\cdot': '·', '\\\\ast': '*', '\\\\star': '*',
+      '\\\\hat': '', '\\\\bar': '', '\\\\tilde': '', '\\\\vec': ''
     };
 
     const clean = (str) => {
       if (typeof str !== 'string') return str;
       let s = str;
+      
+      // Handle \frac{a}{b} -> (a/b)
+      s = s.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)');
+      
+      // Apply the map
       Object.entries(latexMap).forEach(([key, val]) => {
         s = s.replace(new RegExp(key, 'g'), val);
       });
-      // Handle simple \frac{a}{b} -> (a/b)
-      s = s.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)');
-      // Handle superscripts x^{2} -> x²
-      s = s.replace(/\^\{([^}]+)\}/g, '^$1');
+      
+      // Handle simple superscripts x^2 -> x²
+      const superMap = { '0':'⁰', '1':'¹', '2':'²', '3':'³', '4':'⁴', '5':'⁵', '6':'⁶', '7':'⁷', '8':'⁸', '9':'⁹', 'n':'ⁿ', 'x':'ˣ' };
+      s = s.replace(/\^([0-9nx])/g, (m, p1) => superMap[p1] || m);
+      s = s.replace(/\^\{([0-9nx]+)\}/g, (m, p1) => {
+        return p1.split('').map(c => superMap[c] || c).join('');
+      });
+      
+      // Handle simple subscripts x_2 -> x₂
+      const subMap = { '0':'₀', '1':'₁', '2':'₂', '3':'₃', '4':'₄', '5':'₅', '6':'₆', '7':'₇', '8':'₈', '9':'₉' };
+      s = s.replace(/_([0-9])/g, (m, p1) => subMap[p1] || m);
+      s = s.replace(/_\{([0-9]+)\}/g, (m, p1) => {
+        return p1.split('').map(c => subMap[c] || c).join('');
+      });
+
       return s;
     };
 
