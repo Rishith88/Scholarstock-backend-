@@ -710,12 +710,13 @@ router.post('/approve', auth, verifyAdmin, async (req, res) => {
       // Generate watermarked PDF
       const pdfPath = await generateWatermarkedPDF(item);
       
+      const affordablePrice = item.difficulty === 'Easy' ? 5 : item.difficulty === 'Hard' ? 15 : 9;
       await Material.create({
         title: item.title,
         examCategory: item.category,
         subcategory: item.subcategory,
         examLabel: item.category,
-        pricePerDay: item.suggestedPrice || 60,
+        pricePerDay: affordablePrice,
         pdfUrl: pdfPath,
         description: item.content ? item.content.substring(0, 500) : `${item.category} - ${item.subcategory} study material`,
         difficulty: item.difficulty || 'Medium',
@@ -937,7 +938,7 @@ Generate content as JSON:
   "topicsCovered": ["list topics covered in this sheet"],
   "topicComplete": false (set true if ENTIRE ${topicLabel} is fully covered),
   "references": ["HC Verma Vol 1", "NCERT Class 11", "etc"],
-  "suggestedPrice": 40-120 (based on depth and difficulty),
+  "suggestedPrice": 5-29 (affordable: Easy=5, Medium=9, Hard=15, max 29),
   "pages": 2-5
 }`;
 
@@ -1051,7 +1052,7 @@ function parseContent(content, index) {
       topicsCovered: data.topicsCovered || [],
       topicComplete: data.topicComplete || false,
       references: data.references || [],
-      suggestedPrice: data.suggestedPrice || 60,
+      suggestedPrice: data.suggestedPrice || 9,
       pages: data.pages || 3,
       approved: false,
       fileUrl: null,
@@ -1067,7 +1068,7 @@ function createFallbackContent(index) {
   const categories = ['JEE', 'NEET', 'UPSC'];
   const subjects = ['Physics', 'Chemistry', 'Math', 'Biology'];
   const difficulties = ['Easy', 'Medium', 'Hard'];
-  const prices = [40, 50, 60, 70, 80, 90, 100, 120];
+  const prices = [5, 7, 9, 12, 15, 19, 25, 29];
   
   return {
     title: `Content Sheet ${index}`,
