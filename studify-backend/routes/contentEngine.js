@@ -1011,59 +1011,61 @@ async function generateContent(provider, index) {
   const prompt = `You are an expert exam content creator for the ${category} exam. 
   
   RESEARCH & TRANSFORMATION RULE (CRITICAL):
-  - Step 1: Research (mentally or via search) the highest-quality, copyrighted exam questions from official sources, top prep books (like Princeton Review, Barron's, Kaplan for SAT/GRE, or standard NCERT/HC Verma for Indian exams).
-  - Step 2: Use these high-quality sources ONLY as "inspiration".
-  - Step 3: PARAPHRASE the text entirely. Do not copy sentences. Rewrite the context, the story, and the wording.
-  - Step 4: CHANGE ALL NUMBERS. If a source question uses 5kg and 10m/s, YOU must use 12kg and 15m/s or different values entirely.
-  - Step 5: Generate a brand new question that tests the SAME concept but is legally distinct and original.
-  
-  STRICT RELEVANCE RULE: 
-  - You MUST generate content specifically for ${category} (${topicLabel}). 
-  - DO NOT generate content for unrelated exams like JEE, NEET, or UPSC if the requested category is different (e.g., if SAT is requested, generate SAT content only).
-  - The level of difficulty, question style, and syllabus MUST match ${category} standards.
+  - Step 1: Research (mentally or via search) high-quality exam questions.
+  - Step 2: Use them ONLY as inspiration.
+  - Step 3: PARAPHRASE entirely. No copying.
+  - Step 4: CHANGE ALL NUMBERS. If a source uses 5, you use 12.
+  - Step 5: Generate legally distinct, original content.
 
-CONTENT TYPE: ${topicType === 'formulas' ? 'FORMULA BANK with derivations and solved examples' : 
-               topicType === 'questions' ? 'PRACTICE QUESTION PAPER with MCQs, short answers, and long answers' : 
-               'COMPLETE PRACTICE SHEET with theory, formulas, solved examples, and practice MCQs'}
+  STRICT SYMBOL & NOTATION RULE (MANDATORY):
+  - DO NOT USE LaTeX NOTATION like \( \), \[, \frac, \cos, \theta, etc.
+  - DO NOT use backslashes followed by words.
+  - USE ACTUAL UNICODE SYMBOLS ONLY (e.g., θ, γ, α, β, λ, μ, π, Σ, Δ, ±, ≈, ≠, ≤, ≥, √, ∞).
+  - For fractions, use standard slash notation: (1/2)mv².
+  - For powers, use Unicode superscripts (², ³, ⁴) or standard ^ notation (x², y^3).
+  - For square roots, use the √ symbol: √(x² + y²).
+  - For trigonometric functions, just write them as plain text: cos θ, sin(α + β).
+  - The goal is that the text must be perfectly readable in a standard PDF viewer without a LaTeX engine.
+
+  STRICT RELEVANCE RULE: 
+  - Generate content specifically for ${category} (${topicLabel}). 
+  - DO NOT mix with JEE/UPSC if the category is different.
+
+CONTENT TYPE: ${topicType === 'formulas' ? 'FORMULA BANK' : 
+               topicType === 'questions' ? 'PRACTICE QUESTION PAPER' : 
+               'COMPLETE PRACTICE SHEET'}
 
 STRICT REQUIREMENTS:
-- Write like a real exam preparation book (Standard ${category} prep material style)
-- Include 8-12 MCQs with 4 options each (mark correct answer)
+- Include 8-12 MCQs (mark correct answer)
 - Include 3-5 solved examples with step-by-step solutions
-- Include key formulas with units and conditions
-- Include important concepts/theory (2-3 paragraphs)
-- Use proper scientific and mathematical notation.
-- USE ACTUAL UNICODE SYMBOLS for better professional appearance (e.g., θ, γ, α, β, λ, μ, π, Σ, Δ, ±, ≈, ≠, ≤, ≥, √, ∞).
-- For powers and subscripts, you can use Unicode superscripts/subscripts if possible (e.g., x², y₃) or standard ^ notation (e.g., x^2).
-- Use standard operators: ×, ÷, +, -, =, √().
-- Questions should be exam-relevant and varied difficulty
+- Include key formulas and important concepts (2-3 paragraphs)
 - NO filler content, NO generic text
 
-FORMAT YOUR RESPONSE AS VALID JSON ONLY (no markdown, no extra text):
+FORMAT YOUR RESPONSE AS VALID JSON ONLY:
 {
   "title": "${category} - ${topicLabel}: Practice Sheet ${index}",
   "category": "${category}",
   "subcategory": "${topicLabel}",
   "difficulty": "Easy|Medium|Hard",
-  "theory": "2-3 paragraphs of clear concept explanation using actual math symbols like θ and √.",
-  "formulas": ["F = m × a (Newton's 2nd Law)", "v² = u² + 2as (Kinematics)", "E = mc²"],
+  "theory": "Concept explanation using actual math symbols like θ and √. NO LaTeX.",
+  "formulas": ["F = m × a", "v² = u² + 2as", "E = mc²"],
   "solvedExamples": [
     {
-      "question": "If the angle θ is 30° and force F is 10N...",
-      "solution": "Step 1: Calculate component F cos(θ)... Answer: 5√3 N"
+      "question": "If angle θ is 30°...",
+      "solution": "Step 1: F cos θ... Answer: 5√3 N"
     }
   ],
   "mcqs": [
     {
-      "q": "What is the value of the constant π approximately?",
+      "q": "What is the value of π?",
       "options": ["A) 3.14", "B) 2.71", "C) 1.41", "D) 1.62"],
       "answer": "A",
-      "explanation": "π (pi) is the ratio of circumference to diameter, approximately 3.14159."
+      "explanation": "π is approximately 3.14."
     }
   ],
-  "topicsCovered": ["Newton's Laws", "Trigonometry in Physics"],
+  "topicsCovered": ["Newton's Laws"],
   "topicComplete": false,
-  "references": ["Official ${category} Study Guide", "Standard Prep Material"],
+  "references": ["Official ${category} Guide"],
   "suggestedPrice": 9,
   "pages": 4
 }
@@ -1169,15 +1171,49 @@ function parseContent(content, index) {
     
     const data = JSON.parse(jsonMatch[0]);
     
+    // Post-processing: Clean up common LaTeX if AI ignored instructions
+    const latexMap = {
+      '\\\\theta': 'θ', '\\\\alpha': 'α', '\\\\beta': 'β', '\\\\gamma': 'γ',
+      '\\\\Delta': 'Δ', '\\\\pi': 'π', '\\\\mu': 'μ', '\\\\sigma': 'σ',
+      '\\\\Omega': 'Ω', '\\\\lambda': 'λ', '\\\\phi': 'φ', '\\\\epsilon': 'ε',
+      '\\\\sqrt': '√', '\\\\approx': '≈', '\\\\neq': '≠', '\\\\le': '≤', '\\\\ge': '≥',
+      '\\\\pm': '±', '\\\\times': '×', '\\\\div': '÷', '\\\\cdot': '·',
+      '\\\\degree': '°', '\\\\infty': '∞',
+      '\\\\(': '', '\\\\)': '', '\\\\[': '', '\\\\]': '',
+      '\\\\text': '', '\\\\mathbf': '', '\\\\mathrm': '',
+      '\\\\frac': '/' // Very simple fallback
+    };
+
+    const clean = (str) => {
+      if (typeof str !== 'string') return str;
+      let s = str;
+      Object.entries(latexMap).forEach(([key, val]) => {
+        s = s.replace(new RegExp(key, 'g'), val);
+      });
+      // Handle simple \frac{a}{b} -> (a/b)
+      s = s.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '($1/$2)');
+      // Handle superscripts x^{2} -> x²
+      s = s.replace(/\^\{([^}]+)\}/g, '^$1');
+      return s;
+    };
+
     return {
       title: data.title || `Content Sheet ${index}`,
       category: data.category || 'JEE',
       subcategory: data.subcategory || 'Physics',
       difficulty: data.difficulty || 'Medium',
-      theory: data.theory || '',
-      formulas: data.formulas || [],
-      solvedExamples: data.solvedExamples || [],
-      mcqs: data.mcqs || [],
+      theory: clean(data.theory || ''),
+      formulas: (data.formulas || []).map(clean),
+      solvedExamples: (data.solvedExamples || []).map(ex => ({
+        question: clean(ex.question || ''),
+        solution: clean(ex.solution || '')
+      })),
+      mcqs: (data.mcqs || []).map(mcq => ({
+        q: clean(mcq.q || ''),
+        options: (mcq.options || []).map(clean),
+        answer: mcq.answer || '',
+        explanation: clean(mcq.explanation || '')
+      })),
       topicsCovered: data.topicsCovered || [],
       topicComplete: data.topicComplete || false,
       references: data.references || [],
@@ -1194,22 +1230,21 @@ function parseContent(content, index) {
 
 // Fallback content if parsing fails - MAINTAIN QUALITY
 function createFallbackContent(index) {
-  const categories = ['JEE', 'NEET', 'UPSC'];
-  const subjects = ['Physics', 'Chemistry', 'Math', 'Biology'];
-  const difficulties = ['Easy', 'Medium', 'Hard'];
-  const prices = [5, 7, 9, 12, 15, 19, 25, 29];
+  const { category, subcategory } = contentEngine.currentTopic || { category: 'JEE', subcategory: 'Physics' };
   
   return {
-    title: `Content Sheet ${index}`,
-    category: categories[Math.floor(Math.random() * categories.length)],
-    subcategory: subjects[Math.floor(Math.random() * subjects.length)],
-    difficulty: difficulties[Math.floor(Math.random() * difficulties.length)],
-    content: '',
+    title: `${category} - ${subcategory} (Parsing Error)`,
+    category: category,
+    subcategory: subcategory,
+    difficulty: 'Medium',
+    theory: 'Error parsing AI response. Please check rawContent or retry generation.',
     formulas: [],
+    solvedExamples: [],
+    mcqs: [],
     topicsCovered: [],
     topicComplete: false,
-    suggestedPrice: prices[Math.floor(Math.random() * prices.length)],
-    pages: Math.floor(Math.random() * 4) + 2,
+    suggestedPrice: 9,
+    pages: 1,
     approved: false,
     fileUrl: null
   };
