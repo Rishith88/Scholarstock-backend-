@@ -737,7 +737,7 @@ router.delete('/clear', auth, verifyAdmin, async (req, res) => {
 router.post('/preview-pdf-stream', auth, verifyAdmin, async (req, res) => {
   try {
     const item = req.body;
-    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const doc = new PDFDocument({ margin: 50, size: 'A4', bufferPages: true });
     
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'inline; filename=preview.pdf');
@@ -793,6 +793,7 @@ function renderPdfContent(doc, item) {
   // Load Unicode-compatible font if available
   let bodyFont = 'Helvetica';
   let boldFont = 'Helvetica-Bold';
+  let italicFont = 'Helvetica-Oblique';
   
   const fontPaths = [
     path.join(__dirname, '../fonts/UnicodeFont.ttf'),
@@ -817,93 +818,140 @@ function renderPdfContent(doc, item) {
     }
   }
 
+  // Page Border
+  doc.rect(20, 20, doc.page.width - 40, doc.page.height - 40).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+
   // ── HEADER ──
-  doc.rect(0, 0, doc.page.width, 70).fill('#0f172a');
-  doc.fontSize(22).fillColor('#60a5fa').font(boldFont).text('ScholarStock', 50, 20);
-  doc.fontSize(10).fillColor('#94a3b8').font(bodyFont).text('Premium Study Materials', 50, 46);
-  doc.fontSize(10).fillColor('#ffffff').text(`${item.category} • ${item.subcategory}`, 0, 30, { align: 'right', width: doc.page.width - 50 });
+  doc.rect(0, 0, doc.page.width, 80).fill('#0f172a');
+  
+  // Logo area
+  doc.fontSize(26).fillColor('#60a5fa').font(boldFont).text('ScholarStock', 50, 25);
+  doc.fontSize(10).fillColor('#94a3b8').font(bodyFont).text('ULTIMATE PREP SERIES', 50, 52);
+  
+  // Category badge
+  doc.rect(doc.page.width - 200, 25, 150, 30, 5).fill('#1e293b');
+  doc.fontSize(11).fillColor('#ffffff').font(boldFont).text(`${item.category} EXAM`, doc.page.width - 200, 34, { align: 'center', width: 150 });
 
-  doc.moveDown(3);
+  doc.moveDown(4);
 
-  // ── TITLE ──
-  doc.fontSize(18).fillColor('#1e293b').font(boldFont).text(item.title, { align: 'center' });
-  doc.moveDown(0.5);
+  // ── TITLE & SUBTITLE ──
+  doc.fontSize(22).fillColor('#1e293b').font(boldFont).text(item.title, { align: 'center' });
+  doc.moveDown(0.3);
+  doc.fontSize(12).fillColor('#64748b').font(italicFont).text(`Topic: ${item.subcategory}  |  Difficulty: ${item.difficulty || 'Medium'}`, { align: 'center' });
 
-  // ── META ──
-  doc.fontSize(10).fillColor('#64748b').font(bodyFont).text(`Difficulty: ${item.difficulty || 'Medium'}  •  Pages: ${item.pages || 3}`, { align: 'center' });
+  doc.moveDown(1.5);
+  
+  // Divider
+  doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor('#3b82f6').lineWidth(2).stroke();
+  doc.moveDown(1.5);
 
-  doc.moveDown(1);
-  doc.moveTo(50, doc.y).lineTo(doc.page.width - 50, doc.y).strokeColor('#e2e8f0').lineWidth(1).stroke();
-  doc.moveDown(1);
-
-  // ── CONTENT ──
+  // ── THEORY SECTION ──
   if (item.theory) {
-    doc.fontSize(12).fillColor('#1e293b').font(boldFont).text('Concept Overview', { align: 'left' });
-    doc.moveDown(0.3);
-    doc.fontSize(10).fillColor('#334155').font(bodyFont).text(item.theory, { align: 'left', lineGap: 4 });
-    doc.moveDown(1);
+    doc.fontSize(14).fillColor('#0f172a').font(boldFont).text('📘 CONCEPT OVERVIEW');
+    doc.moveDown(0.5);
+    doc.fontSize(11).fillColor('#334155').font(bodyFont).text(item.theory, { align: 'justify', lineGap: 5, paragraphGap: 10 });
+    doc.moveDown(1.5);
   }
 
-  // ── FORMULAS ──
+  // ── FORMULAS SECTION ──
   if (item.formulas && item.formulas.length > 0) {
-    doc.fontSize(12).fillColor('#3b82f6').font(boldFont).text('Key Formulas & Constants');
+    doc.fontSize(14).fillColor('#3b82f6').font(boldFont).text('📐 KEY FORMULAS & CONSTANTS');
     doc.moveDown(0.5);
-    doc.rect(50, doc.y, doc.page.width - 100, (item.formulas.length * 20) + 10).fill('#f8fafc');
+    
+    const startY = doc.y;
+    const boxWidth = doc.page.width - 100;
+    const boxHeight = (item.formulas.length * 25) + 15;
+    
+    doc.rect(50, startY, boxWidth, boxHeight).fill('#f8fafc');
+    doc.rect(50, startY, 4, boxHeight).fill('#3b82f6'); // Left accent
+    
     doc.fillColor('#1e293b');
     item.formulas.forEach((f, i) => {
-      doc.fontSize(10).font(boldFont).text(`${i + 1}. `, 65, doc.y + 5, { continued: true }).font(bodyFont).text(f);
-      doc.moveDown(0.5);
+      doc.fontSize(11).font(boldFont).text(`${i + 1}. `, 70, startY + 10 + (i * 25), { continued: true })
+         .font(bodyFont).text(f);
     });
-    doc.moveDown(1);
+    
+    doc.y = startY + boxHeight;
+    doc.moveDown(2);
   }
 
   // ── SOLVED EXAMPLES ──
   if (item.solvedExamples && item.solvedExamples.length > 0) {
-    doc.fontSize(12).fillColor('#1e293b').font(boldFont).text('Solved Examples');
-    doc.moveDown(0.5);
+    if (doc.y > doc.page.height - 200) doc.addPage();
+    
+    doc.fontSize(14).fillColor('#0f172a').font(boldFont).text('📝 SOLVED EXAMPLES');
+    doc.moveDown(1);
+    
     item.solvedExamples.forEach((ex, i) => {
-      doc.fontSize(10).fillColor('#334155').font(boldFont).text(`Example ${i + 1}: `, { continued: true }).font(bodyFont).text(ex.question);
-      doc.moveDown(0.3);
-      doc.fontSize(10).fillColor('#059669').font(boldFont).text('Solution: ', { continued: true }).font(bodyFont).text(ex.solution);
-      doc.moveDown(1);
+      if (doc.y > doc.page.height - 150) doc.addPage();
+      
+      const exY = doc.y;
+      doc.rect(50, exY, doc.page.width - 100, 1).fill('#e2e8f0'); // Divider
+      doc.moveDown(0.8);
+      
+      doc.fontSize(11).fillColor('#1e293b').font(boldFont).text(`Example ${i + 1}: `, { continued: true })
+         .font(bodyFont).text(ex.question);
+      
+      doc.moveDown(0.5);
+      
+      doc.fontSize(11).fillColor('#059669').font(boldFont).text('Solution: ', { continued: true })
+         .font(bodyFont).fillColor('#334155').text(ex.solution);
+      
+      doc.moveDown(1.5);
     });
   }
 
-  // ── MCQS ──
+  // ── MCQS SECTION ──
   if (item.mcqs && item.mcqs.length > 0) {
     doc.addPage();
-    doc.rect(0, 0, doc.page.width, 70).fill('#0f172a');
-    doc.fontSize(22).fillColor('#60a5fa').font(boldFont).text('ScholarStock', 50, 20);
-    doc.fontSize(12).fillColor('#1e293b').font(boldFont).text('Practice Questions (MCQs)', 50, 90);
-    doc.moveDown(1);
-    item.mcqs.forEach((mcq, i) => {
-      doc.fontSize(10).fillColor('#1e293b').font(boldFont).text(`Q${i + 1}. ${mcq.q}`);
-      doc.moveDown(0.3);
-      mcq.options.forEach(opt => {
-        doc.fontSize(9).fillColor('#475569').font(bodyFont).text(opt, { indent: 20 });
-      });
-      doc.moveDown(0.3);
-      doc.fontSize(9).fillColor('#059669').font(boldFont).text(`Correct Answer: ${mcq.answer}`, { indent: 20 });
-      if (mcq.explanation) {
-        doc.fontSize(9).fillColor('#64748b').font(bodyFont).text(`Explanation: ${mcq.explanation}`, { indent: 20 });
-      }
-      doc.moveDown(1);
-    });
-  }
+    // Re-render Page Border
+    doc.rect(20, 20, doc.page.width - 40, doc.page.height - 40).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+    
+    // MCQ Header
+    doc.rect(0, 0, doc.page.width, 80).fill('#0f172a');
+    doc.fontSize(22).fillColor('#60a5fa').font(boldFont).text('ScholarStock', 50, 25);
+    doc.fontSize(14).fillColor('#ffffff').font(boldFont).text('PRACTICE QUESTIONS (MCQs)', 50, 95);
+    doc.moveDown(2);
 
-  // ── REFERENCES ──
-  if (item.references && item.references.length > 0) {
-    doc.fontSize(11).fillColor('#64748b').font(boldFont).text('References:');
-    doc.fontSize(10).fillColor('#64748b').font(bodyFont).text(item.references.join(', '));
-    doc.moveDown(1);
+    item.mcqs.forEach((mcq, i) => {
+      if (doc.y > doc.page.height - 150) {
+        doc.addPage();
+        doc.rect(20, 20, doc.page.width - 40, doc.page.height - 40).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
+      }
+      
+      doc.fontSize(11).fillColor('#1e293b').font(boldFont).text(`Q${i + 1}. `, { continued: true })
+         .font(bodyFont).text(mcq.q);
+      
+      doc.moveDown(0.5);
+      
+      // Options Grid
+      const optY = doc.y;
+      mcq.options.forEach((opt, idx) => {
+        const xPos = idx % 2 === 0 ? 70 : doc.page.width / 2 + 10;
+        const yPos = optY + Math.floor(idx / 2) * 20;
+        
+        doc.fontSize(10).fillColor('#475569').font(bodyFont).text(opt, xPos, yPos);
+      });
+      
+      doc.y = optY + Math.ceil(mcq.options.length / 2) * 20 + 10;
+      
+      doc.fontSize(10).fillColor('#059669').font(boldFont).text('Correct Answer: ', { continued: true })
+         .font(bodyFont).text(mcq.answer);
+         
+      if (mcq.explanation) {
+        doc.fontSize(10).fillColor('#64748b').font(italicFont).text(`Explanation: ${mcq.explanation}`, { indent: 20 });
+      }
+      
+      doc.moveDown(1.5);
+    });
   }
 
   // ── WATERMARK ──
   doc.save();
-  doc.opacity(0.07);
+  doc.opacity(0.04);
   doc.fontSize(60).fillColor('#3b82f6').font(boldFont);
-  for (let y = 100; y < doc.page.height; y += 200) {
-    for (let x = -100; x < doc.page.width; x += 350) {
+  for (let y = 100; y < doc.page.height; y += 250) {
+    for (let x = -50; x < doc.page.width; x += 350) {
       doc.save();
       doc.translate(x, y).rotate(-35);
       doc.text('ScholarStock', 0, 0);
@@ -911,19 +959,22 @@ function renderPdfContent(doc, item) {
     }
   }
   doc.restore();
-  doc.opacity(1);
 
   // ── FOOTER ──
-  const footerY = doc.page.height - 40;
-  doc.rect(0, footerY - 10, doc.page.width, 50).fill('#0f172a');
-  doc.fontSize(8).fillColor('#94a3b8').font(bodyFont).text('© ScholarStock • scholarstock.com • Unauthorized distribution prohibited', 50, footerY, { align: 'center', width: doc.page.width - 100 });
+  const range = doc.bufferedPageRange();
+  for (let i = range.start; i < range.start + range.count; i++) {
+    doc.switchToPage(i);
+    const footerY = doc.page.height - 40;
+    doc.rect(0, footerY - 10, doc.page.width, 50).fill('#0f172a');
+    doc.fontSize(9).fillColor('#94a3b8').font(bodyFont).text(`© ScholarStock • PREMIUM SERIES • Page ${i + 1} of ${range.count}`, 50, footerY, { align: 'center', width: doc.page.width - 100 });
+  }
 }
 
 // Generate a watermarked PDF and upload to Supabase Storage
 function generateWatermarkedPDF(item) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const filename = `generated/${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
-    const doc = new PDFDocument({ margin: 50, size: 'A4' });
+    const doc = new PDFDocument({ margin: 50, size: 'A4', bufferPages: true });
     const chunks = [];
 
     doc.on('data', chunk => chunks.push(chunk));
@@ -1025,64 +1076,51 @@ async function generateContent(provider, index) {
   const { category, subcategory, topicType } = contentEngine.currentTopic;
   const topicLabel = subcategory || `All ${category} topics`;
   
-  const prompt = `You are an expert exam content creator for the ${category} exam. 
-  
-  RESEARCH & TRANSFORMATION RULE (CRITICAL):
-  - Step 1: Research (mentally or via search) high-quality exam questions.
-  - Step 2: Use them ONLY as inspiration.
-  - Step 3: PARAPHRASE entirely. No copying.
-  - Step 4: CHANGE ALL NUMBERS. If a source uses 5, you use 12.
-  - Step 5: Generate legally distinct, original content.
+  const prompt = `You are an ELITE exam content creator for the ${category} exam. 
+  Your task is to generate ULTIMATELY PROFESSIONAL study material that looks like it came from a top-tier textbook.
 
-  STRICT SYMBOL & NOTATION RULE (MANDATORY):
-  - DO NOT USE LaTeX NOTATION like \( \), \[, \frac, \cos, \theta, etc.
-  - DO NOT use backslashes followed by words.
-  - USE ACTUAL UNICODE SYMBOLS ONLY (e.g., θ, γ, α, β, λ, μ, π, Σ, Δ, ±, ≈, ≠, ≤, ≥, √, ∞).
-  - For fractions, use standard slash notation: (1/2)mv².
-  - For powers, use Unicode superscripts (², ³, ⁴) or standard ^ notation (x², y^3).
-  - For square roots, use the √ symbol: √(x² + y²).
-  - For trigonometric functions, just write them as plain text: cos θ, sin(α + β).
-  - The goal is that the text must be perfectly readable in a standard PDF viewer without a LaTeX engine.
+  STRICT RESEARCH & TRANSFORMATION RULE:
+  - Step 1: Research the highest-quality exam questions for ${category}.
+  - Step 2: PARAPHRASE entirely. Reword the context and logic.
+  - Step 3: CHANGE ALL NUMBERS and variables.
+  - Step 4: Ensure the content is legally distinct and original.
 
-  STRICT RELEVANCE RULE: 
-  - Generate content specifically for ${category} (${topicLabel}). 
-  - DO NOT mix with JEE/UPSC if the category is different.
+  STRICT SYMBOL & NOTATION RULE:
+  - DO NOT USE LaTeX NOTATION (no backslashes like \\frac, \\cos, \\theta).
+  - USE ACTUAL UNICODE SYMBOLS ONLY (e.g., θ, γ, α, β, λ, μ, π, Σ, Δ, ±, ≈, ≠, ≤, ≥, √, ∞, ², ³, ⁴).
+  - Write formulas clearly: (1/2)mv², √(x² + y²), cos θ.
+  - The text must be perfectly readable in a standard PDF without any special rendering engine.
+
+  STRICT JSON FORMATTING RULE:
+  - You MUST return a VALID JSON object ONLY.
+  - NO markdown formatting (no \`\`\`json blocks).
+  - NO text before or after the JSON.
+  - Escape all special characters properly.
+  - Double-check that all braces and quotes are balanced.
 
 CONTENT TYPE: ${topicType === 'formulas' ? 'FORMULA BANK' : 
                topicType === 'questions' ? 'PRACTICE QUESTION PAPER' : 
                'COMPLETE PRACTICE SHEET'}
 
 STRICT REQUIREMENTS:
-- Include 8-12 MCQs (mark correct answer)
-- Include 3-5 solved examples with step-by-step solutions
-- Include key formulas and important concepts (2-3 paragraphs)
-- NO filler content, NO generic text
+- Theory: 2-3 paragraphs of clear, deep concept explanation.
+- MCQs: 8-12 high-quality questions with 4 options and detailed explanations.
+- Solved Examples: 3-5 step-by-step problems with professional walkthroughs.
+- Formulas: Comprehensive list of key equations.
 
-FORMAT YOUR RESPONSE AS VALID JSON ONLY:
+JSON STRUCTURE:
 {
-  "title": "${category} - ${topicLabel}: Practice Sheet ${index}",
+  "title": "${category} - ${topicLabel}: Master Class Sheet ${index}",
   "category": "${category}",
   "subcategory": "${topicLabel}",
   "difficulty": "Easy|Medium|Hard",
-  "theory": "Concept explanation using actual math symbols like θ and √. NO LaTeX.",
-  "formulas": ["F = m × a", "v² = u² + 2as", "E = mc²"],
-  "solvedExamples": [
-    {
-      "question": "If angle θ is 30°...",
-      "solution": "Step 1: F cos θ... Answer: 5√3 N"
-    }
-  ],
-  "mcqs": [
-    {
-      "q": "What is the value of π?",
-      "options": ["A) 3.14", "B) 2.71", "C) 1.41", "D) 1.62"],
-      "answer": "A",
-      "explanation": "π is approximately 3.14."
-    }
-  ],
-  "topicsCovered": ["Newton's Laws"],
+  "theory": "...",
+  "formulas": ["..."],
+  "solvedExamples": [{"question": "...", "solution": "..."}],
+  "mcqs": [{"q": "...", "options": ["A) ", "B) ", "C) ", "D) "], "answer": "A|B|C|D", "explanation": "..."}],
+  "topicsCovered": ["..."],
   "topicComplete": false,
-  "references": ["Official ${category} Guide"],
+  "references": ["Official ${category} Prep Guide"],
   "suggestedPrice": 9,
   "pages": 4
 }
@@ -1180,13 +1218,25 @@ FORMAT YOUR RESPONSE AS VALID JSON ONLY:
 // Parse AI response into structured content - TOPIC COVERAGE
 function parseContent(content, index) {
   try {
-    // Extract JSON from response
+    // Extract JSON from response - handle markdown and noise
+    let jsonStr = content;
     const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      return createFallbackContent(index);
+    if (jsonMatch) {
+      jsonStr = jsonMatch[0];
     }
     
-    const data = JSON.parse(jsonMatch[0]);
+    let data;
+    try {
+      data = JSON.parse(jsonStr);
+    } catch (parseErr) {
+      console.log('Direct parse failed, trying to clean JSON...');
+      // Remove trailing commas and other common JSON noise
+      const cleaned = jsonStr
+        .replace(/,\s*([}\]])/g, '$1') // remove trailing commas
+        .replace(/([^\\])\\"/g, '$1"') // fix escaped quotes
+        .replace(/\\n/g, ' ');         // remove newlines inside strings
+      data = JSON.parse(cleaned);
+    }
     
     // Post-processing: Clean up common LaTeX if AI ignored instructions
     const latexMap = {
@@ -1277,6 +1327,7 @@ function parseContent(content, index) {
       rawContent: content
     };
   } catch (err) {
+    console.error('Final Parse Error:', err.message);
     return createFallbackContent(index);
   }
 }
