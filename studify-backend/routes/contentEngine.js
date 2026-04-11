@@ -177,7 +177,7 @@ class AIProviderPool {
         model: 'llama-3.3-70b-versatile',
         usage: 0,
         limit: 500,
-        enabled: !!process.env.GROQ_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -188,7 +188,7 @@ class AIProviderPool {
         model: 'llama-3.1-8b-instant',
         usage: 0,
         limit: 500,
-        enabled: !!process.env.GROQ_API_KEY,
+        enabled: true,
         quality: 'tier2'
       },
       // ==================== CEREBRAS (Ultra Fast - Active for Content Engine) ====================
@@ -200,7 +200,7 @@ class AIProviderPool {
         model: 'llama3.3-70b',
         usage: 0,
         limit: 1000,
-        enabled: !!process.env.CEREBRAS_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -211,7 +211,7 @@ class AIProviderPool {
         model: 'qwen3-32b',
         usage: 0,
         limit: 1000,
-        enabled: !!process.env.CEREBRAS_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       
@@ -224,7 +224,7 @@ class AIProviderPool {
         model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
         usage: 0,
         limit: 500,
-        enabled: !!process.env.HUGGINGFACE_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -235,7 +235,7 @@ class AIProviderPool {
         model: 'mistralai/Mixtral-8x7B-Instruct-v0.1',
         usage: 0,
         limit: 500,
-        enabled: !!process.env.HUGGINGFACE_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -246,7 +246,7 @@ class AIProviderPool {
         model: 'Qwen/Qwen2.5-72B-Instruct',
         usage: 0,
         limit: 500,
-        enabled: !!process.env.HUGGINGFACE_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -257,7 +257,7 @@ class AIProviderPool {
         model: 'mistralai/Mistral-Large-Instruct-2407',
         usage: 0,
         limit: 500,
-        enabled: !!process.env.HUGGINGFACE_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -268,7 +268,7 @@ class AIProviderPool {
         model: 'codellama/CodeLlama-70b-Instruct-hf',
         usage: 0,
         limit: 500,
-        enabled: !!process.env.HUGGINGFACE_API_KEY,
+        enabled: true,
         quality: 'tier2'
       },
       
@@ -282,7 +282,7 @@ class AIProviderPool {
         model: 'llama3.3-70b',
         usage: 0,
         limit: 1000, // 1M tokens/day
-        enabled: !!process.env.CEREBRAS_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -293,7 +293,7 @@ class AIProviderPool {
         model: 'qwen3-32b',
         usage: 0,
         limit: 1000,
-        enabled: !!process.env.CEREBRAS_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       
@@ -307,7 +307,7 @@ class AIProviderPool {
         model: 'gpt-4o',
         usage: 0,
         limit: 50, // 10 RPM, 50 req/day
-        enabled: !!process.env.GITHUB_TOKEN,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -318,7 +318,7 @@ class AIProviderPool {
         model: 'grok-3',
         usage: 0,
         limit: 50,
-        enabled: !!process.env.GITHUB_TOKEN,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -329,7 +329,7 @@ class AIProviderPool {
         model: 'deepseek-r1',
         usage: 0,
         limit: 150, // 15 RPM, 150 req/day
-        enabled: !!process.env.GITHUB_TOKEN,
+        enabled: true,
         quality: 'tier1'
       },
       
@@ -343,7 +343,7 @@ class AIProviderPool {
         model: 'deepseek-ai/deepseek-r1',
         usage: 0,
         limit: 100, // 40 RPM, 1000 credits
-        enabled: !!process.env.NVIDIA_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -354,7 +354,7 @@ class AIProviderPool {
         model: 'moonshotai/kimi-k2-instruct',
         usage: 0,
         limit: 100,
-        enabled: !!process.env.NVIDIA_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       
@@ -368,7 +368,7 @@ class AIProviderPool {
         model: 'Meta-Llama-3.3-70B-Instruct',
         usage: 0,
         limit: 100,
-        enabled: !!process.env.SAMBANOVA_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -379,7 +379,7 @@ class AIProviderPool {
         model: 'Qwen2.5-72B-Instruct',
         usage: 0,
         limit: 100,
-        enabled: !!process.env.SAMBANOVA_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       
@@ -393,7 +393,7 @@ class AIProviderPool {
         model: 'deepseek-chat',
         usage: 0,
         limit: 500, // 5M tokens free
-        enabled: !!process.env.DEEPSEEK_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -404,7 +404,7 @@ class AIProviderPool {
         model: 'deepseek-reasoner',
         usage: 0,
         limit: 500,
-        enabled: !!process.env.DEEPSEEK_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       
@@ -419,7 +419,7 @@ class AIProviderPool {
         model: 'gemini-2.5-flash-lite',
         usage: 0,
         limit: 1000, // MOST GENEROUS: 15 RPM, 1000 RPD
-        enabled: !!process.env.GEMINI_API_KEY,
+        enabled: true,
         quality: 'tier2' // Slightly less capable but very fast
       },
       {
@@ -430,7 +430,7 @@ class AIProviderPool {
         model: 'gemini-2.5-flash',
         usage: 0,
         limit: 250, // 10 RPM, 250 RPD (best balance)
-        enabled: !!process.env.GEMINI_API_KEY,
+        enabled: true,
         quality: 'tier1' // Best quality with free tier
       },
       {
@@ -441,7 +441,7 @@ class AIProviderPool {
         model: 'deepseek-chat',
         usage: 0,
         limit: 100,
-        enabled: !!process.env.DEEPSEEK_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -452,7 +452,7 @@ class AIProviderPool {
         model: 'deepseek-coder',
         usage: 0,
         limit: 100,
-        enabled: !!process.env.DEEPSEEK_API_KEY,
+        enabled: true,
         quality: 'tier2'
       },
       
@@ -465,7 +465,7 @@ class AIProviderPool {
         model: 'accounts/fireworks/models/llama-v3p1-70b-instruct',
         usage: 0,
         limit: 100,
-        enabled: !!process.env.FIREWORKS_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -476,7 +476,7 @@ class AIProviderPool {
         model: 'accounts/fireworks/models/mixtral-8x22b-instruct',
         usage: 0,
         limit: 100,
-        enabled: !!process.env.FIREWORKS_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -487,7 +487,7 @@ class AIProviderPool {
         model: 'accounts/fireworks/models/qwen2p5-72b-instruct',
         usage: 0,
         limit: 100,
-        enabled: !!process.env.FIREWORKS_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       
@@ -500,7 +500,7 @@ class AIProviderPool {
         model: 'llama-3.1-70b-versatile',
         usage: 0,
         limit: 30, // Free tier RPM
-        enabled: !!process.env.GROQ_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -511,7 +511,7 @@ class AIProviderPool {
         model: 'llama-3.1-8b-instant',
         usage: 0,
         limit: 30,
-        enabled: !!process.env.GROQ_API_KEY,
+        enabled: true,
         quality: 'tier2'
       },
       
@@ -524,7 +524,7 @@ class AIProviderPool {
         model: 'mistral-large-latest',
         usage: 0,
         limit: 100,
-        enabled: !!process.env.MISTRAL_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -535,7 +535,7 @@ class AIProviderPool {
         model: 'mistral-medium-latest',
         usage: 0,
         limit: 100,
-        enabled: !!process.env.MISTRAL_API_KEY,
+        enabled: true,
         quality: 'tier1'
       },
       {
@@ -546,7 +546,7 @@ class AIProviderPool {
         model: 'jamba-instruct',
         usage: 0,
         limit: 100,
-        enabled: !!process.env.AI21_API_KEY,
+        enabled: true,
         quality: 'tier2'
       }
     ];
