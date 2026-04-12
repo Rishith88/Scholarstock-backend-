@@ -60,10 +60,10 @@ ensureBucket();
 // ═══════════════════════════════════════════════════════════════════════
 
 // Provider factory — call once per team so each team has its own usage counters
-function makeProvider(name, type, endpoint, key, model, limit, quality) {
+function makeProvider(name, type, endpoint, key, model, limit, quality, accountId = null) {
   const enabled = !!(key && key !== 'undefined' && key.length > 5);
   if (!enabled) console.warn(`⚠  Provider ${name} disabled — no API key`);
-  return { name, type, endpoint, key, model, usage: 0, limit, enabled, quality };
+  return { name, type, endpoint, key, model, usage: 0, limit, enabled, quality, accountId };
 }
 
 // ── Shared provider config shortcuts ──
@@ -117,6 +117,15 @@ class AITeam {
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TEAM ALPHA ⚡ — Powerhouse: DeepSeek reasoning + Cerebras speed + GPT-4o
+// Cloudflare Workers AI helper (accountId baked in)
+function makeCFProvider(name, model, limit, quality) {
+  const key = process.env.CLOUDFLARE_API_TOKEN;
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const enabled = !!(key && key !== 'undefined' && key.length > 5 && accountId);
+  if (!enabled) console.warn(`⚠  CF Provider ${name} disabled — set CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID`);
+  return { name, type: 'cloudflare', endpoint: null, key, model, usage: 0, limit, enabled, quality, accountId };
+}
+
 // Each provider is a fresh object so usage counters are independent per team
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamAlpha = new AITeam('Alpha ⚡', [
@@ -133,6 +142,7 @@ const teamAlpha = new AITeam('Alpha ⚡', [
   makeProvider('α-or-mistral-7b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'mistralai/mistral-7b-instruct:free', 1000, 'tier2'),
   makeProvider('α-or-qwen3-8b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'qwen/qwen3-8b:free', 1000, 'tier2'),
   makeProvider('α-or-deepseek-r1-distill', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-r1-distill-llama-70b:free', 1000, 'tier1'),
+  makeCFProvider('α-cf-llama3.3-70b', '@cf/meta/llama-3.3-70b-instruct-fp8-fast', 200, 'tier1'),
   makeProvider('α-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
 
@@ -151,6 +161,7 @@ const teamBeta = new AITeam('Beta 🧠', [
   makeProvider('β-openrouter-phi4', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'microsoft/phi-4:free', 1000, 'tier2'),
   makeProvider('β-or-gemma3-12b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'google/gemma-3-12b-it:free', 1000, 'tier2'),
   makeProvider('β-or-mistral-small-24b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'mistralai/mistral-small-3.2-24b-instruct:free', 1000, 'tier1'),
+  makeCFProvider('β-cf-llama3.1-70b', '@cf/meta/llama-3.1-70b-instruct', 200, 'tier1'),
   makeProvider('β-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
 
@@ -169,6 +180,7 @@ const teamGamma = new AITeam('Gamma 🔥', [
   makeProvider('γ-or-gemma3-27b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'google/gemma-3-27b-it:free', 1000, 'tier1'),
   makeProvider('γ-or-qwen3-14b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'qwen/qwen3-14b:free', 1000, 'tier1'),
   makeProvider('γ-or-glm4-9b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'thudm/glm-4-9b-chat:free', 1000, 'tier2'),
+  makeCFProvider('γ-cf-mistral-7b', '@cf/mistral/mistral-7b-instruct-v0.2-lora', 200, 'tier1'),
   makeProvider('γ-fireworks-llama70b', 'fireworks', FW, process.env.FIREWORKS_API_KEY, 'accounts/fireworks/models/llama-v3p1-70b-instruct', 100, 'tier2'),
   makeProvider('γ-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
@@ -764,6 +776,16 @@ async function callAI(provider, prompt) {
         prompt, maxTokens: 4096, temperature: 0.7
       }, { headers, timeout });
       return response.data.completions[0].data.text || '';
+    }
+
+    case 'cloudflare': {
+      // Cloudflare Workers AI — uses account ID in URL, Bearer token auth
+      response = await axios.post(
+        `https://api.cloudflare.com/client/v4/accounts/${provider.accountId}/ai/run/${provider.model}`,
+        { messages: [{ role: 'user', content: prompt }], max_tokens: 2048 },
+        { headers: { 'Authorization': `Bearer ${provider.key}`, 'Content-Type': 'application/json' }, timeout }
+      );
+      return response.data.result?.response || '';
     }
 
     default:
