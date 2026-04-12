@@ -129,7 +129,7 @@ function makeCFProvider(name, model, limit, quality) {
 const teamAlpha = new AITeam('Alpha ⚡', [
   makeProvider('α-groq-llama3.3-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 500, 'tier1'),
   makeProvider('α-groq-llama3.1-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-70b-versatile', 500, 'tier1'),
-  makeProvider('α-cerebras-llama3.1-70b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama-3.1-70b', 1000, 'tier1'),
+  makeProvider('α-cerebras-llama3.1-70b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama3.1-70b', 1000, 'tier1'),
   makeProvider('α-openrouter-deepseek-v3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat-v3-0324', 1000, 'tier1'),
   makeProvider('α-openrouter-llama4-maverick', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-4-maverick', 1000, 'tier1'),
   makeProvider('α-github-gpt-4o', 'github', GH, process.env.GITHUB_TOKEN, 'gpt-4o', 50, 'tier1'),
@@ -168,7 +168,7 @@ const teamBeta = new AITeam('Beta 🧠', [
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamGamma = new AITeam('Gamma 🔥', [
   makeProvider('γ-groq-llama3.3-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 500, 'tier1'),
-  makeProvider('γ-cerebras-llama3.1-70b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama-3.1-70b', 1000, 'tier1'),
+  makeProvider('γ-cerebras-llama3.1-70b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama3.1-70b', 1000, 'tier1'),
   makeProvider('γ-openrouter-deepseek-v3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat-v3-0324', 1000, 'tier1'),
   makeProvider('γ-openrouter-llama4-scout', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-4-scout', 1000, 'tier1'),
   makeProvider('γ-github-deepseek-v3', 'github', GH, process.env.GITHUB_TOKEN, 'deepseek-v3-0324', 150, 'tier1'),
@@ -634,6 +634,10 @@ function generateWatermarkedPDF(item) {
     doc.on('end', async () => {
       try {
         const buffer = Buffer.concat(chunks);
+        // Ensure bucket exists before upload
+        try {
+          await supabase.storage.createBucket(SUPABASE_BUCKET, { public: true });
+        } catch (e) { /* bucket already exists, ignore */ }
         const { data, error } = await supabase.storage.from(SUPABASE_BUCKET).upload(filename, buffer, { contentType: 'application/pdf', upsert: false });
         if (error) throw error;
         const { data: urlData } = supabase.storage.from(SUPABASE_BUCKET).getPublicUrl(filename);
