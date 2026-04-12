@@ -308,6 +308,22 @@ router.get('/preview', auth, verifyAdmin, async (req, res) => {
   });
 });
 
+// GET /api/content-engine/test-providers — test one call per team, return results
+router.get('/test-providers', auth, verifyAdmin, async (req, res) => {
+  const results = [];
+  for (const team of allTeams) {
+    const provider = team.getProvider();
+    if (!provider) { results.push({ team: team.name, status: 'no_provider' }); continue; }
+    try {
+      const text = await callAI(provider, 'Say "OK" and nothing else.');
+      results.push({ team: team.name, provider: provider.name, status: 'ok', response: text.substring(0, 80) });
+    } catch (err) {
+      results.push({ team: team.name, provider: provider.name, status: 'error', error: err.message });
+    }
+  }
+  res.json({ success: true, results });
+});
+
 // DELETE /api/content-engine/item/:index
 router.delete('/item/:index', auth, verifyAdmin, async (req, res) => {
   const index = parseInt(req.params.index);
