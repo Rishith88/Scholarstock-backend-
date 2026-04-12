@@ -61,7 +61,9 @@ ensureBucket();
 
 // Provider factory — call once per team so each team has its own usage counters
 function makeProvider(name, type, endpoint, key, model, limit, quality) {
-  return { name, type, endpoint, key, model, usage: 0, limit, enabled: true, quality };
+  const enabled = !!(key && key !== 'undefined' && key.length > 5);
+  if (!enabled) console.warn(`⚠  Provider ${name} disabled — no API key`);
+  return { name, type, endpoint, key, model, usage: 0, limit, enabled, quality };
 }
 
 // ── Shared provider config shortcuts ──
@@ -755,9 +757,18 @@ async function callAI(provider, prompt) {
 
 // ── Mid-level helper: retry within a specific team ──
 async function callAIWithRetry(team, prompt, maxRetries = 3) {
+  let lastErr = 'No providers available';
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const provider = team.getProvider();
     if (!provider) throw new Error(`[${team.name}] All providers exhausted`);
+
+    // Skip providers with no API key configured
+    if (!provider.key || provider.key === 'undefined') {
+      console.warn(`  [${team.name}] ⚠ ${provider.name} — no API key, skipping`);
+      provider.enabled = false;
+      continue;
+    }
+
     try {
       console.log(`  [${team.name}] → ${provider.name} (attempt ${attempt}/${maxRetries})`);
       const text = await callAI(provider, prompt);
@@ -765,10 +776,11 @@ async function callAIWithRetry(team, prompt, maxRetries = 3) {
       if (text && text.trim().length > 20) return text.trim();
       throw new Error('Response too short or empty');
     } catch (err) {
+      lastErr = err.message;
       console.warn(`  [${team.name}] ✗ ${provider.name} failed: ${err.message}`);
     }
   }
-  throw new Error(`[${team.name}] All ${maxRetries} retry attempts failed`);
+  throw new Error(`[${team.name}] All retries failed. Last error: ${lastErr}`);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
