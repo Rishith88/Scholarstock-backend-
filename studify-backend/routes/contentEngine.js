@@ -1231,30 +1231,42 @@ function parseContent(content, index) {
     } catch (parseErr) {
       console.log('Direct parse failed, trying advanced JSON sanitization...');
       try {
-        // Strip out markdown code blocks commonly added by LLMs
         let cleaned = jsonStr.replace(/```json/gi, '').replace(/```/g, '');
-        // Isolate the JSON by finding the first '{' and the last '}'
         const firstBrace = cleaned.indexOf('{');
         const lastBrace = cleaned.lastIndexOf('}');
         if (firstBrace !== -1 && lastBrace !== -1) {
           cleaned = cleaned.substring(firstBrace, lastBrace + 1);
         }
-        // Safely escape actual control characters without double-escaping
-        cleaned = cleaned
-          .replace(/[\n\r\t]/g, (match) => {
-            if (match === '\n') return '\\n';
-            if (match === '\r') return '\\r';
-            if (match === '\t') return '\\t';
-            return ' ';
-          })
-          // Remove pesky trailing commas which break standard JSON
-          .replace(/,\s*([}\]])/g, '$1')
-          // Fix unescaped interior quotes if possible (very rudimentary fallback)
-          .replace(/:\s*"([^"]*)"/g, function(m, p1) {
-             return ':"' + p1.replace(/"/g, '\\"') + '"';
-          });
+        
+        // Remove trailing commas
+        cleaned = cleaned.replace(/,\s*([}\]])/g, '$1');
+
+        // State machine to safely escape newlines and control chars INSIDE string literals
+        let inString = false;
+        let escape = false;
+        let fixedJson = "";
+        for (let i = 0; i < cleaned.length; i++) {
+          let c = cleaned[i];
+          if (escape) {
+            fixedJson += c;
+            escape = false;
+          } else if (c === '\\') {
+            fixedJson += c;
+            escape = true;
+          } else if (c === '"') {
+            inString = !inString;
+            fixedJson += c;
+          } else if (inString) {
+            if (c === '\n') fixedJson += '\\n';
+            else if (c === '\r') fixedJson += '\\r';
+            else if (c === '\t') fixedJson += '\\t';
+            else fixedJson += c;
+          } else {
+            fixedJson += c;
+          }
+        }
           
-        data = JSON.parse(cleaned);
+        data = JSON.parse(fixedJson);
       } catch (finalErr) {
         console.error("Advanced JSON Parse Failed:", finalErr.message);
         throw new Error("JSON Repair Failed");
