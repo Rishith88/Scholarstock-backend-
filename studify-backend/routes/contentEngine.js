@@ -131,6 +131,8 @@ const teamAlpha = new AITeam('Alpha ⚡', [
   makeProvider('α-or-gemini-flash-exp', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'google/gemini-2.0-flash-exp:free', 1000, 'tier1'),
   makeProvider('α-or-nemotron-70b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'nvidia/llama-3.1-nemotron-70b-instruct:free', 1000, 'tier1'),
   makeProvider('α-or-mistral-7b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'mistralai/mistral-7b-instruct:free', 1000, 'tier2'),
+  makeProvider('α-or-qwen3-8b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'qwen/qwen3-8b:free', 1000, 'tier2'),
+  makeProvider('α-or-deepseek-r1-distill', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-r1-distill-llama-70b:free', 1000, 'tier1'),
   makeProvider('α-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
 
@@ -147,6 +149,8 @@ const teamBeta = new AITeam('Beta 🧠', [
   makeProvider('β-openrouter-llama4-maverick', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-4-maverick:free', 1000, 'tier1'),
   makeProvider('β-mistral-large', 'mistral', MST, process.env.MISTRAL_API_KEY, 'mistral-large-latest', 100, 'tier1'),
   makeProvider('β-openrouter-phi4', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'microsoft/phi-4:free', 1000, 'tier2'),
+  makeProvider('β-or-gemma3-12b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'google/gemma-3-12b-it:free', 1000, 'tier2'),
+  makeProvider('β-or-mistral-small-24b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'mistralai/mistral-small-3.2-24b-instruct:free', 1000, 'tier1'),
   makeProvider('β-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
 
@@ -163,6 +167,8 @@ const teamGamma = new AITeam('Gamma 🔥', [
   makeProvider('γ-mistral-small', 'mistral', MST, process.env.MISTRAL_API_KEY, 'mistral-small-latest', 100, 'tier1'),
   makeProvider('γ-or-qwen2.5-72b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'qwen/qwen-2.5-72b-instruct:free', 1000, 'tier1'),
   makeProvider('γ-or-gemma3-27b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'google/gemma-3-27b-it:free', 1000, 'tier1'),
+  makeProvider('γ-or-qwen3-14b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'qwen/qwen3-14b:free', 1000, 'tier1'),
+  makeProvider('γ-or-glm4-9b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'thudm/glm-4-9b-chat:free', 1000, 'tier2'),
   makeProvider('γ-fireworks-llama70b', 'fireworks', FW, process.env.FIREWORKS_API_KEY, 'accounts/fireworks/models/llama-v3p1-70b-instruct', 100, 'tier2'),
   makeProvider('γ-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
