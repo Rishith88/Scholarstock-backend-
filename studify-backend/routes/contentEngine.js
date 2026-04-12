@@ -15,8 +15,8 @@ const DEJAVU_BOLD_PATH = path.join(FONTS_DIR, 'DejaVuSans-Bold.ttf');
 async function ensureFonts() {
   if (!fs.existsSync(FONTS_DIR)) fs.mkdirSync(FONTS_DIR, { recursive: true });
   const downloads = [
-    { url: 'https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans.ttf', dest: DEJAVU_PATH },
-    { url: 'https://github.com/dejavu-fonts/dejavu-fonts/raw/master/ttf/DejaVuSans-Bold.ttf', dest: DEJAVU_BOLD_PATH }
+    { url: 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf', dest: DEJAVU_PATH },
+    { url: 'https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans-Bold.ttf', dest: DEJAVU_BOLD_PATH }
   ];
   for (const { url, dest } of downloads) {
     if (!fs.existsSync(dest)) {
