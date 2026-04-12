@@ -128,7 +128,9 @@ const teamAlpha = new AITeam('Alpha ⚡', [
   makeProvider('α-github-gpt-4o', 'github', GH, process.env.GITHUB_TOKEN, 'gpt-4o', 50, 'tier1'),
   makeProvider('α-gemini-2.5-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-2.5-flash', 250, 'tier1'),
   makeProvider('α-openrouter-llama4-scout', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-4-scout:free', 1000, 'tier1'),
-  makeProvider('α-openrouter-mistral-7b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'mistralai/mistral-7b-instruct:free', 1000, 'tier2'),
+  makeProvider('α-or-gemini-flash-exp', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'google/gemini-2.0-flash-exp:free', 1000, 'tier1'),
+  makeProvider('α-or-nemotron-70b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'nvidia/llama-3.1-nemotron-70b-instruct:free', 1000, 'tier1'),
+  makeProvider('α-or-mistral-7b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'mistralai/mistral-7b-instruct:free', 1000, 'tier2'),
   makeProvider('α-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
 
@@ -159,7 +161,8 @@ const teamGamma = new AITeam('Gamma 🔥', [
   makeProvider('γ-github-deepseek-v3', 'github', GH, process.env.GITHUB_TOKEN, 'DeepSeek-V3', 150, 'tier1'),
   makeProvider('γ-gemini-1.5-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-1.5-flash', 500, 'tier1'),
   makeProvider('γ-mistral-small', 'mistral', MST, process.env.MISTRAL_API_KEY, 'mistral-small-latest', 100, 'tier1'),
-  makeProvider('γ-openrouter-qwen2.5-72b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'qwen/qwen-2.5-72b-instruct:free', 1000, 'tier1'),
+  makeProvider('γ-or-qwen2.5-72b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'qwen/qwen-2.5-72b-instruct:free', 1000, 'tier1'),
+  makeProvider('γ-or-gemma3-27b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'google/gemma-3-27b-it:free', 1000, 'tier1'),
   makeProvider('γ-fireworks-llama70b', 'fireworks', FW, process.env.FIREWORKS_API_KEY, 'accounts/fireworks/models/llama-v3p1-70b-instruct', 100, 'tier2'),
   makeProvider('γ-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
