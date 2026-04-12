@@ -72,8 +72,6 @@ const GRQ = 'https://api.groq.com/openai/v1/chat/completions';
 const CER = 'https://api.cerebras.ai/v1/chat/completions';
 const HF = 'https://api-inference.huggingface.co/models/';
 const GH = 'https://models.inference.ai.azure.com/chat/completions';
-const NV = 'https://integrate.api.nvidia.com/v1/chat/completions';
-const SBN = 'https://api.sambanova.ai/v1/chat/completions';
 const DSK = 'https://api.deepseek.com/v1/chat/completions';
 const GEM = 'https://generativelanguage.googleapis.com/v1beta/models/';
 const FW = 'https://api.fireworks.ai/inference/v1/chat/completions';
@@ -738,8 +736,6 @@ async function callAI(provider, prompt) {
     case 'openrouter':
     case 'cerebras':
     case 'github':
-    case 'nvidia':
-    case 'sambanova':
     case 'together':
     case 'deepseek':
     case 'fireworks':
