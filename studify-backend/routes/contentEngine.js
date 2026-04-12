@@ -120,57 +120,48 @@ class AITeam {
 // Each provider is a fresh object so usage counters are independent per team
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamAlpha = new AITeam('Alpha ⚡', [
-  // Ultra-fast backbone
-  makeProvider('α-cerebras-llama3.3-70b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama3.3-70b', 1000, 'tier1'),
   makeProvider('α-groq-llama3.3-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 500, 'tier1'),
-  // Powerhouse reasoning
-  makeProvider('α-openrouter-deepseek-r1', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-r1:free', 1000, 'tier1'),
-  makeProvider('α-openrouter-qwen3-235b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'qwen/qwen3-235b-a22b:free', 1000, 'tier1'),
+  makeProvider('α-groq-llama3.1-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-70b-versatile', 500, 'tier1'),
+  makeProvider('α-cerebras-llama3.1-70b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama3.1-70b', 1000, 'tier1'),
+  makeProvider('α-openrouter-deepseek-v3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat-v3-0324:free', 1000, 'tier1'),
+  makeProvider('α-openrouter-llama4-maverick', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-4-maverick:free', 1000, 'tier1'),
   makeProvider('α-github-gpt-4o', 'github', GH, process.env.GITHUB_TOKEN, 'gpt-4o', 50, 'tier1'),
   makeProvider('α-gemini-2.5-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-2.5-flash', 250, 'tier1'),
-  // Backups
-  makeProvider('α-sambanova-llama3.3-70b', 'sambanova', SBN, process.env.SAMBANOVA_API_KEY, 'Meta-Llama-3.3-70B-Instruct', 100, 'tier1'),
-  makeProvider('α-huggingface-llama70b', 'huggingface', HF, process.env.HUGGINGFACE_API_KEY, 'meta-llama/Meta-Llama-3.1-70B-Instruct', 500, 'tier1'),
-  makeProvider('α-deepseek-reasoner', 'deepseek', DSK, process.env.DEEPSEEK_API_KEY, 'deepseek-reasoner', 500, 'tier1'),
-  makeProvider('α-fireworks-llama70b', 'fireworks', FW, process.env.FIREWORKS_API_KEY, 'accounts/fireworks/models/llama-v3p1-70b-instruct', 100, 'tier2'),
+  makeProvider('α-openrouter-llama4-scout', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-4-scout:free', 1000, 'tier1'),
+  makeProvider('α-openrouter-mistral-7b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'mistralai/mistral-7b-instruct:free', 1000, 'tier2'),
+  makeProvider('α-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TEAM BETA 🧠 — Intelligence: Kimi + Qwen + Grok + Cerebras Qwen
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamBeta = new AITeam('Beta 🧠', [
-  // Ultra-fast backbone
-  makeProvider('β-cerebras-qwen3-32b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'qwen3-32b', 1000, 'tier1'),
-  makeProvider('β-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
-  // Powerhouse intelligence
+  makeProvider('β-cerebras-llama3.1-8b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama3.1-8b', 1000, 'tier1'),
+  makeProvider('β-groq-llama3.3-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 500, 'tier1'),
   makeProvider('β-openrouter-kimi-k2', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'moonshotai/kimi-k2:free', 1000, 'tier1'),
+  makeProvider('β-openrouter-deepseek-v3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat-v3-0324:free', 1000, 'tier1'),
+  makeProvider('β-github-gpt-4o-mini', 'github', GH, process.env.GITHUB_TOKEN, 'gpt-4o-mini', 50, 'tier1'),
+  makeProvider('β-gemini-2.0-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-2.0-flash', 500, 'tier1'),
   makeProvider('β-openrouter-llama4-maverick', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-4-maverick:free', 1000, 'tier1'),
-  makeProvider('β-github-grok-3', 'github', GH, process.env.GITHUB_TOKEN, 'grok-3', 50, 'tier1'),
-  makeProvider('β-nvidia-deepseek-r1', 'nvidia', NV, process.env.NVIDIA_API_KEY, 'deepseek-ai/deepseek-r1', 100, 'tier1'),
-  // Backups
-  makeProvider('β-sambanova-qwen2.5-72b', 'sambanova', SBN, process.env.SAMBANOVA_API_KEY, 'Qwen2.5-72B-Instruct', 100, 'tier1'),
-  makeProvider('β-huggingface-qwen72b', 'huggingface', HF, process.env.HUGGINGFACE_API_KEY, 'Qwen/Qwen2.5-72B-Instruct', 500, 'tier1'),
-  makeProvider('β-gemini-2.5-flash-lite', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-2.5-flash-lite', 1000, 'tier2'),
-  makeProvider('β-fireworks-mixtral8x22b', 'fireworks', FW, process.env.FIREWORKS_API_KEY, 'accounts/fireworks/models/mixtral-8x22b-instruct', 100, 'tier2'),
+  makeProvider('β-mistral-large', 'mistral', MST, process.env.MISTRAL_API_KEY, 'mistral-large-latest', 100, 'tier1'),
+  makeProvider('β-openrouter-phi4', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'microsoft/phi-4:free', 1000, 'tier2'),
+  makeProvider('β-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // TEAM GAMMA 🔥 — Diversity: DeepSeek V3 + Llama4-Scout + GPT-OSS + Mistral
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamGamma = new AITeam('Gamma 🔥', [
-  // Ultra-fast backbone
-  makeProvider('γ-groq-llama70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-70b-versatile', 500, 'tier1'),
-  makeProvider('γ-groq-llama8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
-  // Powerhouse diversity
+  makeProvider('γ-groq-llama3.3-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 500, 'tier1'),
+  makeProvider('γ-cerebras-llama3.1-70b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama3.1-70b', 1000, 'tier1'),
   makeProvider('γ-openrouter-deepseek-v3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat-v3-0324:free', 1000, 'tier1'),
   makeProvider('γ-openrouter-llama4-scout', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-4-scout:free', 1000, 'tier1'),
-  makeProvider('γ-openrouter-gpt-oss-120b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'openai/gpt-oss-120b:free', 1000, 'tier1'),
-  makeProvider('γ-github-deepseek-r1', 'github', GH, process.env.GITHUB_TOKEN, 'deepseek-r1', 150, 'tier1'),
-  // Backups
-  makeProvider('γ-nvidia-kimi-k2.5', 'nvidia', NV, process.env.NVIDIA_API_KEY, 'moonshotai/kimi-k2-instruct', 100, 'tier1'),
-  makeProvider('γ-mistral-large', 'mistral', MST, process.env.MISTRAL_API_KEY, 'mistral-large-latest', 100, 'tier1'),
-  makeProvider('γ-deepseek-chat-v3', 'deepseek', DSK, process.env.DEEPSEEK_API_KEY, 'deepseek-chat', 500, 'tier1'),
-  makeProvider('γ-fireworks-qwen72b', 'fireworks', FW, process.env.FIREWORKS_API_KEY, 'accounts/fireworks/models/qwen2p5-72b-instruct', 100, 'tier2'),
+  makeProvider('γ-github-deepseek-v3', 'github', GH, process.env.GITHUB_TOKEN, 'DeepSeek-V3', 150, 'tier1'),
+  makeProvider('γ-gemini-1.5-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-1.5-flash', 500, 'tier1'),
+  makeProvider('γ-mistral-small', 'mistral', MST, process.env.MISTRAL_API_KEY, 'mistral-small-latest', 100, 'tier1'),
+  makeProvider('γ-openrouter-qwen2.5-72b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'qwen/qwen-2.5-72b-instruct:free', 1000, 'tier1'),
+  makeProvider('γ-fireworks-llama70b', 'fireworks', FW, process.env.FIREWORKS_API_KEY, 'accounts/fireworks/models/llama-v3p1-70b-instruct', 100, 'tier2'),
+  makeProvider('γ-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
 
 // All 3 teams
