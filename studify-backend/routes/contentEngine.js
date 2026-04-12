@@ -1137,7 +1137,7 @@ JSON STRUCTURE:
         response = await axios.post(provider.endpoint, {
           model: provider.model,
           messages: [{ role: 'user', content: prompt }],
-          max_tokens: 4000,
+          max_tokens: 8192,
           temperature: 0.7
         }, {
           headers: {
@@ -1154,7 +1154,7 @@ JSON STRUCTURE:
       case 'huggingface': {
         response = await axios.post(`${provider.endpoint}${provider.model}`, {
           inputs: prompt,
-          parameters: { max_new_tokens: 4000, temperature: 0.7 }
+          parameters: { max_new_tokens: 8192, temperature: 0.7 }
         }, {
           headers: {
             'Authorization': `Bearer ${provider.key}`,
@@ -1172,7 +1172,7 @@ JSON STRUCTURE:
         response = await axios.post(provider.endpoint, {
           model: provider.model,
           messages: [{ role: 'user', content: prompt }],
-          max_tokens: 4000,
+          max_tokens: 8192,
           temperature: 0.7
         }, {
           headers: {
@@ -1186,7 +1186,7 @@ JSON STRUCTURE:
       case 'gemini': {
         response = await axios.post(`${provider.endpoint}${provider.model}:generateContent?key=${provider.key}`, {
           contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 4000, temperature: 0.7 }
+          generationConfig: { maxOutputTokens: 8192, temperature: 0.7 }
         });
         return parseContent(response.data.candidates[0].content.parts[0].text, index);
       }
@@ -1194,7 +1194,7 @@ JSON STRUCTURE:
       case 'ai21': {
         response = await axios.post(`${provider.endpoint}${provider.model}/complete`, {
           prompt: prompt,
-          maxTokens: 4000,
+          maxTokens: 8192,
           temperature: 0.7
         }, {
           headers: {
