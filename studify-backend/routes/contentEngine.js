@@ -46,6 +46,18 @@ const SUPABASE_BUCKET = getEnv('SUPABASE_BUCKET') || 'materials';
 const supabaseUrl = getEnv('SUPABASE_URL');
 const supabaseKey = getEnv('SUPABASE_SERVICE_KEY') || getEnv('SUPABASE_ANON_KEY');
 
+let supabase = null;
+if (supabaseUrl && supabaseKey && supabaseUrl !== '') {
+  try {
+    supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('✅ Supabase initialized');
+  } catch (e) {
+    console.warn('⚠️ Supabase init failed:', e.message);
+  }
+} else {
+  console.warn('⚠️ Supabase credentials missing — PDF storage will be disabled');
+}
+
 // Auto-create bucket if it doesn't exist (if supabase is available)
 async function ensureBucket() {
   if (!supabase) return;
