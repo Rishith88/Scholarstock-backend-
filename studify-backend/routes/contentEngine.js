@@ -81,15 +81,18 @@ function makeProvider(name, type, endpoint, key, model, limit, quality, accountI
 
 // Helper for Cloudflare Workers AI
 function makeCFProvider(name, model, limit, quality) {
+  const cfKey = process.env.CLOUDFLARE_API_KEY || process.env.CF_API_KEY || process.env.CLOUDFLARE_TOKEN;
+  const cfAccount = process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CF_ACCOUNT_ID;
+
   return makeProvider(
     name, 
     'cloudflare', 
     null, 
-    process.env.CLOUDFLARE_API_KEY, 
+    cfKey, 
     model, 
     limit, 
     quality, 
-    process.env.CLOUDFLARE_ACCOUNT_ID
+    cfAccount
   );
 }
 
