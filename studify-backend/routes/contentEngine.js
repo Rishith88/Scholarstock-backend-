@@ -130,16 +130,12 @@ const teamAlpha = new AITeam('Alpha ⚡', [
   makeProvider('α-groq-llama3.3-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 500, 'tier1'),
   makeProvider('α-groq-llama3.1-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-70b-versatile', 500, 'tier1'),
   makeProvider('α-cerebras-llama3.1-70b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama3.1-70b', 1000, 'tier1'),
-  makeProvider('α-openrouter-deepseek-v3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat-v3-0324:free', 1000, 'tier1'),
-  makeProvider('α-openrouter-llama4-maverick', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-4-maverick:free', 1000, 'tier1'),
+  makeProvider('α-openrouter-deepseek-v3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat', 1000, 'tier1'),
+  makeProvider('α-openrouter-llama3.3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct:free', 1000, 'tier1'),
   makeProvider('α-github-gpt-4o', 'github', GH, process.env.GITHUB_TOKEN, 'gpt-4o', 50, 'tier1'),
-  makeProvider('α-gemini-2.5-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-2.5-flash', 250, 'tier1'),
-  makeProvider('α-openrouter-llama4-scout', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-4-scout:free', 1000, 'tier1'),
-  makeProvider('α-or-gemini-flash-exp', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'microsoft/phi-4:free', 1000, 'tier1'),
-  makeProvider('α-or-nemotron-70b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'google/gemma-3-12b-it:free', 1000, 'tier1'),
-  makeProvider('α-or-mistral-7b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'mistralai/mistral-7b-instruct:free', 1000, 'tier2'),
-  makeProvider('α-or-qwen3-8b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'qwen/qwen3-8b:free', 1000, 'tier2'),
-  makeProvider('α-or-deepseek-r1-distill', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-r1-0528:free', 1000, 'tier1'),
+  makeProvider('α-gemini-2.0-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-2.0-flash', 250, 'tier1'),
+  makeProvider('α-openrouter-phi4', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'microsoft/phi-4:free', 1000, 'tier1'),
+  makeProvider('α-or-deepseek-r1-distill', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-r1-distill-llama-70b:free', 1000, 'tier1'),
   makeCFProvider('α-cf-llama3.3-70b', '@cf/meta/llama-3.3-70b-instruct-fp8-fast', 200, 'tier1'),
   makeProvider('α-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
@@ -150,15 +146,12 @@ const teamAlpha = new AITeam('Alpha ⚡', [
 const teamBeta = new AITeam('Beta 🧠', [
   makeProvider('β-cerebras-llama3.1-8b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama3.1-8b', 1000, 'tier1'),
   makeProvider('β-groq-llama3.3-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 500, 'tier1'),
-  makeProvider('β-openrouter-kimi-k2', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'google/gemma-3-27b-it:free', 1000, 'tier1'),
-  makeProvider('β-openrouter-deepseek-v3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat-v3-0324:free', 1000, 'tier1'),
+  makeProvider('β-openrouter-deepseek-chat', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat', 1000, 'tier1'),
   makeProvider('β-github-gpt-4o-mini', 'github', GH, process.env.GITHUB_TOKEN, 'gpt-4o-mini', 50, 'tier1'),
-  makeProvider('β-gemini-2.0-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-2.5-flash', 500, 'tier1'),
-  makeProvider('β-openrouter-llama4-maverick', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-4-maverick:free', 1000, 'tier1'),
+  makeProvider('β-gemini-1.5-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-1.5-flash', 500, 'tier1'),
+  makeProvider('β-openrouter-llama3.1-70b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-3.1-70b-instruct:free', 1000, 'tier1'),
   makeProvider('β-mistral-large', 'mistral', MST, process.env.MISTRAL_API_KEY, 'mistral-large-latest', 100, 'tier1'),
-  makeProvider('β-openrouter-phi4', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'microsoft/phi-4:free', 1000, 'tier2'),
-  makeProvider('β-or-gemma3-12b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'google/gemma-3-12b-it:free', 1000, 'tier2'),
-  makeProvider('β-or-mistral-small-24b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'mistralai/mistral-7b-instruct:free', 1000, 'tier1'),
+  makeProvider('β-openrouter-mistral-7b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'mistralai/mistral-7b-instruct:free', 1000, 'tier2'),
   makeCFProvider('β-cf-llama3.1-70b', '@cf/meta/llama-3.1-70b-instruct', 200, 'tier1'),
   makeProvider('β-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
@@ -169,15 +162,13 @@ const teamBeta = new AITeam('Beta 🧠', [
 const teamGamma = new AITeam('Gamma 🔥', [
   makeProvider('γ-groq-llama3.3-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 500, 'tier1'),
   makeProvider('γ-cerebras-llama3.1-70b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama3.1-70b', 1000, 'tier1'),
-  makeProvider('γ-openrouter-deepseek-v3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat-v3-0324:free', 1000, 'tier1'),
-  makeProvider('γ-openrouter-llama4-scout', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-4-scout:free', 1000, 'tier1'),
-  makeProvider('γ-github-deepseek-v3', 'github', GH, process.env.GITHUB_TOKEN, 'deepseek-v3-0324', 150, 'tier1'),
-  makeProvider('γ-gemini-1.5-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-2.5-flash-lite', 500, 'tier1'),
+  makeProvider('γ-openrouter-deepseek-v3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat', 1000, 'tier1'),
+  makeProvider('γ-openrouter-llama3.1-405b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-3.1-405b-instruct:free', 1000, 'tier1'),
+  makeProvider('γ-github-deepseek-v3', 'github', GH, process.env.GITHUB_TOKEN, 'deepseek-v3', 150, 'tier1'),
+  makeProvider('γ-gemini-1.5-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-1.5-flash', 500, 'tier1'),
   makeProvider('γ-mistral-small', 'mistral', MST, process.env.MISTRAL_API_KEY, 'mistral-small-latest', 100, 'tier1'),
   makeProvider('γ-or-qwen2.5-72b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'qwen/qwen-2.5-72b-instruct:free', 1000, 'tier1'),
-  makeProvider('γ-or-gemma3-27b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'google/gemma-3-27b-it:free', 1000, 'tier1'),
-  makeProvider('γ-or-qwen3-14b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'qwen/qwen3-14b:free', 1000, 'tier1'),
-  makeProvider('γ-or-glm4-9b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'thudm/glm-4-9b-chat:free', 1000, 'tier2'),
+  makeProvider('γ-or-gemma2-27b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'google/gemma-2-27b-it:free', 1000, 'tier1'),
   makeCFProvider('γ-cf-mistral-7b', '@cf/mistral/mistral-7b-instruct-v0.2-lora', 200, 'tier1'),
   makeProvider('γ-fireworks-llama70b', 'fireworks', FW, process.env.FIREWORKS_API_KEY, 'accounts/fireworks/models/llama-v3p1-70b-instruct', 100, 'tier2'),
   makeProvider('γ-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
@@ -618,7 +609,54 @@ function renderPdfContent(doc, item) {
     const footerY = H - 38;
     doc.rect(0, footerY - 8, W, 46).fill('#0f172a');
     doc.fontSize(8.5).fillColor('#94a3b8').font(bodyFont)
-      .text(`© ScholarStock  •  PREMIUM SERIES  •  Page ${i + 1} of ${range.count}`, L, footerY, { align: 'center', width: CW });
+      .text(`© ScholarStock  •  ${item.isError ? 'DEBUG REPORT' : 'PREMIUM SERIES'}  •  Page ${i + 1} of ${range.count}`, L, footerY, { align: 'center', width: CW });
+  }
+
+  // ── 0. Error Layout (If isError is true, override the rest) ──
+  if (item.isError) {
+    doc.switchToPage(0);
+    // Clear page content (or just draw over)
+    doc.rect(50, 150, CW, H - 300).fill('#fffaf0');
+    doc.rect(50, 150, 5, H - 300).fill('#dc2626');
+    
+    doc.y = 180;
+    doc.fontSize(20).fillColor('#dc2626').font(boldFont).text('PIPELINE FAILURE REPORT', L + 20, doc.y);
+    doc.moveDown(1);
+    
+    const info = item.debugInfo || {};
+    
+    const labelStyle = { font: boldFont, size: 11, color: '#475569' };
+    const valStyle = { font: bodyFont, size: 11, color: '#1e293b' };
+
+    function row(label, val) {
+      doc.fontSize(labelStyle.size).fillColor(labelStyle.color).font(labelStyle.font).text(`${label}: `, { continued: true });
+      doc.fontSize(valStyle.size).fillColor(valStyle.color).font(valStyle.font).text(val || 'N/A');
+      doc.moveDown(0.5);
+    }
+
+    row('FAILED TEAM', info.team);
+    row('FAILED STAGE', info.stage);
+    row('TIMESTAMP', new Date().toLocaleString());
+    doc.moveDown(1);
+    
+    doc.fontSize(12).fillColor('#dc2626').font(boldFont).text('TECHNICAL ERROR LOG:');
+    doc.rect(L + 20, doc.y + 5, CW - 40, 150).fill('#fef2f2');
+    doc.fontSize(10).fillColor('#991b1b').font(bodyFont).text(item.theory || 'Unknown error', L + 30, doc.y + 15, { width: CW - 60 });
+    
+    doc.y = 520;
+    doc.fontSize(10).fillColor('#475569').font(bodyFont).text('SYSTEM RECOMMENDATION:', L + 20, doc.y);
+    const recs = [
+      'Check if the API keys for this team are still valid.',
+      'One or more providers in this team might be hitting rate limits.',
+      'The model might have flagged the content as unsafe (Gemini/DeepSeek safety filters).',
+      'The request timed out (currently set to 90 seconds).'
+    ];
+    recs.forEach((r, i) => {
+      doc.text(`• ${r}`, L + 30, doc.y + 5, { width: CW - 60 });
+      doc.moveDown(0.2);
+    });
+
+    return; // Stop rendering the rest of the PDF
   }
 }
 
@@ -737,7 +775,25 @@ async function callAI(provider, prompt) {
 
   let response;
   switch (provider.type) {
-    case 'openrouter':
+    case 'openrouter': {
+      try {
+        response = await axios.post(provider.endpoint, {
+          model: provider.model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 4096,
+          temperature: 0.7
+        }, { headers, timeout });
+        return response.data.choices[0].message.content || '';
+      } catch (err) {
+        // OpenRouter returns 402 for RATE LIMITS now (not actual payment required)
+        if (err.response?.status === 402 || err.response?.status === 429) {
+          provider.usage++;
+          throw new Error(`OpenRouter rate limited, will try next provider`);
+        }
+        throw err;
+      }
+    }
+
     case 'cerebras':
     case 'github':
     case 'together':
@@ -794,18 +850,15 @@ async function callAI(provider, prompt) {
 }
 
 // ── Mid-level helper: retry within a specific team ──
-async function callAIWithRetry(team, prompt, maxRetries = 3) {
+async function callAIWithRetry(team, prompt, maxRetries = 8) {
   let lastErr = 'No providers available';
+  
+  // To avoid teams hitting the same provider simultaneously, we can start with a random offset
+  if (team.idx === 0) team.idx = Math.floor(Math.random() * team.providers.length);
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     const provider = team.getProvider();
     if (!provider) throw new Error(`[${team.name}] All providers exhausted`);
-
-    // Skip providers with no API key configured
-    if (!provider.key || provider.key === 'undefined') {
-      console.warn(`  [${team.name}] ⚠ ${provider.name} — no API key, skipping`);
-      provider.enabled = false;
-      continue;
-    }
 
     try {
       console.log(`  [${team.name}] → ${provider.name} (attempt ${attempt}/${maxRetries})`);
@@ -814,11 +867,16 @@ async function callAIWithRetry(team, prompt, maxRetries = 3) {
       if (text && text.trim().length > 20) return text.trim();
       throw new Error('Response too short or empty');
     } catch (err) {
-      lastErr = err.message;
+      lastErr = `${provider.name} → ${err.message}`;
       console.warn(`  [${team.name}] ✗ ${provider.name} failed: ${err.message}`);
+      
+      // If we are rate limited or hit a 404/400, wait briefly before trying the next provider in the team
+      if (err.response?.status === 429 || err.response?.status === 402) {
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+      }
     }
   }
-  throw new Error(`[${team.name}] All retries failed. Last error: ${lastErr}`);
+  throw new Error(`[${team.name}] All ${maxRetries} retries failed. Last error: ${lastErr}`);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1138,18 +1196,23 @@ async function runTeamPipeline(team, index) {
   const difficulties = ['Easy', 'Medium', 'Hard'];
   const difficulty = difficulties[index % 3];
 
+  // Add random jitter (0-5s) to avoid teams starting stages at the exact same millisecond
+  await new Promise(r => setTimeout(r, Math.random() * 5000));
+
   console.log(`[Pipeline #${index}] [${team.name}] ${category} > ${topicLabel} | ${difficulty}`);
+  let currentStage = "Starting";
 
   try {
-    // Stage 1: Research
-    console.log(`[${team.name}] Stage 1/10: Research...`);
+    currentStage = "1/10 Research";
+    console.log(`[${team.name}] Stage ${currentStage}...`);
     const researchText = await stageResearch(team, category, topicLabel);
     console.log(`[${team.name}] Stage 1 done (${researchText.length} chars)`);
 
-    // Stage 2: Theory
-    console.log(`[${team.name}] Stage 2/10: Theory...`);
+    currentStage = "2/10 Theory";
+    console.log(`[${team.name}] Stage ${currentStage}...`);
     const theoryText = await stageTheory(team, category, topicLabel, researchText);
     console.log(`[${team.name}] Stage 2 done (${theoryText.length} chars)`);
+
 
     // Stage 3: Formulas
     let formulas = [];
@@ -1226,14 +1289,21 @@ async function runTeamPipeline(team, index) {
     return result;
 
   } catch (err) {
-    console.error(`[Pipeline #${index}] FAILED: ${err.message}`);
+    console.error(`[Pipeline #${index}] [${team.name}] FAILED at Stage ${currentStage}: ${err.message}`);
     const { category: cat, subcategory: sub } = contentEngine.currentTopic || {};
     return {
-      title: `${cat || 'Exam'} - ${sub || 'Topic'} (Pipeline Error #${index})`,
+      isError: true,
+      debugInfo: {
+        team: team.name,
+        stage: currentStage,
+        timestamp: new Date().toISOString(),
+        index
+      },
+      title: `${cat || 'Exam'} - ${sub || 'Topic'} (FAILED: ${currentStage})`,
       category: cat || 'Unknown',
       subcategory: sub || 'Unknown',
       difficulty,
-      theory: `Pipeline generation failed: ${err.message}. Please retry.`,
+      theory: `Pipeline generation failed at stage [${currentStage}] on [${team.name}]: ${err.message}`,
       formulas: [],
       solvedExamples: [],
       mcqs: [],
