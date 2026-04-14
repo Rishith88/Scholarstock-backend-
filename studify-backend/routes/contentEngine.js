@@ -153,14 +153,11 @@ class AITeam {
 // TEAM ALPHA ⚡ — Powerhouse: Advanced/Hard Specialist (DeepSeek R1 + GPT-4o)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamAlpha = new AITeam('Alpha ⚡', [
-  makeProvider('α-groq-llama3.3-70b', 'groq', GRQ, getEnv('GROQ_API_KEY'), 'llama-3.3-70b-versatile', 500, 'tier1'),
-  makeProvider('α-cerebras-llama3.1-8b', 'cerebras', CER, getEnv('CEREBRAS_API_KEY'), 'llama3.1-8b', 1000, 'tier1'),
-  makeProvider('α-openrouter-deepseek-v3', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-chat', 1000, 'tier1'),
-  makeProvider('α-openrouter-llama3.3', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'meta-llama/llama-3.3-70b-instruct', 1000, 'tier1'),
   makeProvider('α-github-gpt-4o', 'github', GH, getEnv('GITHUB_TOKEN'), 'gpt-4o', 50, 'tier1'),
+  makeProvider('α-openrouter-deepseek-r1-distill', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-r1-distill-llama-70b', 1000, 'tier1'),
+  makeProvider('α-openrouter-llama3.1-405b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'meta-llama/llama-3.1-405b-instruct', 1000, 'tier1'),
   makeProvider('α-gemini-2.0-flash', 'gemini', GEM, getEnv('GEMINI_API_KEY'), 'gemini-2.0-flash', 250, 'tier1'),
   makeProvider('α-openrouter-phi4', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'microsoft/phi-4', 1000, 'tier1'),
-  makeProvider('α-or-deepseek-r1-distill', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-r1-distill-llama-70b', 1000, 'tier1'),
   makeCFProvider('α-cf-llama3.3-70b', '@cf/meta/llama-3.3-70b-instruct-fp8-fast', 200, 'tier1'),
 ]);
 teamAlpha.role = 'Advanced Theory Specialist';
@@ -169,16 +166,13 @@ teamAlpha.role = 'Advanced Theory Specialist';
 // TEAM BETA 🧠 — Intelligence: MCQ/Practice Specialist (Kimi + Qwen + Cerebras)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamBeta = new AITeam('Beta 🧠', [
-  makeProvider('β-cerebras-llama3.1-8b', 'cerebras', CER, getEnv('CEREBRAS_API_KEY'), 'llama3.1-8b', 1000, 'tier1'),
   makeProvider('β-groq-llama3.3-70b', 'groq', GRQ, getEnv('GROQ_API_KEY'), 'llama-3.3-70b-versatile', 500, 'tier1'),
-  makeProvider('β-openrouter-deepseek-chat', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-chat', 1000, 'tier1'),
+  makeProvider('β-cerebras-llama3.1-8b', 'cerebras', CER, getEnv('CEREBRAS_API_KEY'), 'llama3.1-8b', 1000, 'tier1'),
+  makeProvider('β-openrouter-deepseek-v3', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-chat', 1000, 'tier1'),
   makeProvider('β-github-gpt-4o-mini', 'github', GH, getEnv('GITHUB_TOKEN'), 'gpt-4o-mini', 50, 'tier1'),
-  makeProvider('β-gemini-2.0-flash', 'gemini', GEM, getEnv('GEMINI_API_KEY'), 'gemini-2.0-flash', 500, 'tier1'),
-  makeProvider('β-openrouter-llama3.1-70b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'meta-llama/llama-3.1-70b-instruct', 1000, 'tier1'),
   makeProvider('β-mistral-large', 'mistral', MST, getEnv('MISTRAL_API_KEY'), 'mistral-large-latest', 100, 'tier1'),
   makeProvider('β-openrouter-mistral-7b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'mistralai/mistral-7b-instruct', 1000, 'tier2'),
   makeCFProvider('β-cf-llama3.1-70b', '@cf/meta/llama-3.1-70b-instruct', 200, 'tier1'),
-  makeProvider('β-groq-llama3.1-8b', 'groq', GRQ, getEnv('GROQ_API_KEY'), 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
 teamBeta.role = 'Mass MCQ & Application Specialist';
 
@@ -186,12 +180,8 @@ teamBeta.role = 'Mass MCQ & Application Specialist';
 // TEAM GAMMA 🔥 — Diversity: Foundation & Notes Specialist (Gemini + Qwen + Llama)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamGamma = new AITeam('Gamma 🔥', [
-  makeProvider('γ-groq-llama3.3-70b', 'groq', GRQ, getEnv('GROQ_API_KEY'), 'llama-3.3-70b-versatile', 500, 'tier1'),
   makeProvider('γ-cerebras-llama3.1-70b', 'cerebras', CER, getEnv('CEREBRAS_API_KEY'), 'llama3.1-70b', 1000, 'tier1'),
-  makeProvider('γ-openrouter-deepseek-v3', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-chat', 1000, 'tier1'),
-  makeProvider('γ-openrouter-llama3.1-405b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'meta-llama/llama-3.1-405b-instruct', 1000, 'tier1'),
   makeProvider('γ-github-deepseek-v3', 'github', GH, getEnv('GITHUB_TOKEN'), 'deepseek-v3', 150, 'tier1'),
-  makeProvider('γ-gemini-2.0-flash', 'gemini', GEM, getEnv('GEMINI_API_KEY'), 'gemini-2.0-flash', 500, 'tier1'),
   makeProvider('γ-mistral-small', 'mistral', MST, getEnv('MISTRAL_API_KEY'), 'mistral-small-latest', 100, 'tier1'),
   makeProvider('γ-or-qwen2.5-72b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'qwen/qwen-2.5-72b-instruct', 1000, 'tier1'),
   makeProvider('γ-or-gemma2-27b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'google/gemma-2-27b-it', 1000, 'tier1'),
