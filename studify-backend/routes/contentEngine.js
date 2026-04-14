@@ -34,15 +34,27 @@ async function ensureFonts() {
 }
 ensureFonts();
 
-// Supabase client for PDF storage
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY
-);
+// ── Supabase client for PDF storage ──
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+
+let supabase = null;
+if (supabaseUrl && supabaseKey && supabaseUrl !== 'undefined') {
+  try {
+    supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('✅ Supabase initialized');
+  } catch (e) {
+    console.warn('⚠️ Supabase init failed:', e.message);
+  }
+} else {
+  console.warn('⚠️ Supabase credentials missing — PDF storage will be disabled');
+}
+
 const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'materials';
 
-// Auto-create bucket if it doesn't exist
+// Auto-create bucket if it doesn't exist (if supabase is available)
 async function ensureBucket() {
+  if (!supabase) return;
   try {
     const { data: buckets } = await supabase.storage.listBuckets();
     const exists = buckets && buckets.find(b => b.name === SUPABASE_BUCKET);
@@ -65,6 +77,20 @@ function makeProvider(name, type, endpoint, key, model, limit, quality, accountI
   const enabled = !!(key && key !== 'undefined' && key.length > 5);
   if (!enabled) console.warn(`⚠  Provider ${name} disabled — no API key`);
   return { name, type, endpoint, key, model, usage: 0, limit, enabled, quality, accountId };
+}
+
+// Helper for Cloudflare Workers AI
+function makeCFProvider(name, model, limit, quality) {
+  return makeProvider(
+    name, 
+    'cloudflare', 
+    null, 
+    process.env.CLOUDFLARE_API_KEY, 
+    model, 
+    limit, 
+    quality, 
+    process.env.CLOUDFLARE_ACCOUNT_ID
+  );
 }
 
 // ── Shared provider config shortcuts ──
