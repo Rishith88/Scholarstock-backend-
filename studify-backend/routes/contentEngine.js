@@ -905,14 +905,13 @@ async function stageResearch(team, category, topicLabel) {
   const prompt =
     `You are a Senior Academic Researcher specializing in the ${category} exam curriculum.
     
-Your goal is to provide ELITE-LEVEL research data for the topic: "${topicLabel}".
+Your goal is to provide a COMPREHENSIVE RESEARCH DOSSIER for the topic: "${topicLabel}".
 
-List the 10 most critical concepts, hidden nuances, and high-yield facts that distinguish top-tier ${category} candidates.
+List the 15 most critical concepts, hidden nuances, and high-yield facts that distinguish top-tier ${category} candidates.
 
 OUTPUT RULES:
 - Numbered list only. One breakthrough concept per line.
 - Plain text. No JSON. No markdown. NO LaTeX.
-- Use Unicode symbols for formulas/math (θ, π, ², √, ∞, Σ, Δ).
 - Focus on concepts that actually appear in the most recent ${category} papers.
 
 1. `;
@@ -925,15 +924,15 @@ OUTPUT RULES:
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function stageTheory(team, category, topicLabel, researchPoints) {
   const prompt =
-    `You are a Lead Educator writing a master-class textbook for the ${category} exam.
+    `You are a Lead Educator writing an EXTENDED master-class textbook for the ${category} exam.
     
-Write a sophisticated, in-depth conceptual theory for "${topicLabel}".
+Write an exhaustive, high-level conceptual theory for "${topicLabel}".
 
 Key points to integrate:
 ${researchPoints}
 
 OUTPUT RULES:
-- 3 dense, academic paragraphs of flowing prose.
+- Exactly 6 dense, academic paragraphs of flowing prose.
 - Maximize technical accuracy. Use high-level vocabulary appropriate for ${category}.
 - Plain text only. No bullets/headings. NO LaTeX.
 - Use Unicode (θ, π, ², √, Σ, Δ, ±, ≤, ≥, ≈).
@@ -974,19 +973,25 @@ async function stageSolvedExamples(team, category, topicLabel) {
   const prompt =
     `You are a ${category} specialized tutor.
 
-Create 3 master-level step-by-step solved problems about "${topicLabel}".
-One must be 'Easy' (foundational), one 'Medium' (application), and one 'Hard' (analytical/trap).
+Create 5 EXTENDED master-level step-by-step solved problems about "${topicLabel}".
+Difficulty: 1 Easy, 2 Medium, 2 Hard (analytical/trap).
 
 OUTPUT FORMAT:
 
 PROBLEM 1: [foundational question]
-SOLUTION: [step-by-step logic]
+SOLUTION: [exhaustive step-by-step logic]
 ---
-PROBLEM 2: [application question]
-SOLUTION: [step-by-step logic]
+PROBLEM 2: [application level]
+SOLUTION: [logic]
 ---
-PROBLEM 3: [complex analytical question]
-SOLUTION: [step-by-step logic]
+PROBLEM 3: [application level]
+SOLUTION: [logic]
+---
+PROBLEM 4: [advanced analytical]
+SOLUTION: [logic]
+---
+PROBLEM 5: [extreme difficulty/trap]
+SOLUTION: [logic]
 
 CRITICAL RULES:
 - Use UNICODE math symbols ONLY. NO LaTeX \\ backslashes.
@@ -1003,8 +1008,8 @@ async function stageMCQs(team, category, topicLabel) {
   const prompt =
     `You are a Senior Question Setter for the ${category} examination board.
     
-Generate 8 high-quality MCQs for "${topicLabel}".
-Difficulty: 2 Easy, 4 Medium, 2 Elite (Complex).
+Generate 15 ELITE-QUALITY MCQs for "${topicLabel}".
+Difficulty: 4 Easy, 7 Medium, 4 Elite (Complex).
 
 FORMAT FOR EVERY QUESTION:
 
@@ -1014,12 +1019,13 @@ B) [option]
 C) [option]
 D) [option]
 ANSWER: [A or B or C or D]
-EXPLANATION: [deep dive into why this answer is correct and why others are traps]
+EXPLANATION: [exhaustive deep dive into the logic, traps, and conceptual reasons]
 ---
 
 RULES:
+- Generete EXACTLY 15 QUESTIONS.
 - UNICODE SYMBOLS ONLY. NO LaTeX.
-- Questions must be rigorous and test deep understanding, not just recall.
+- Questions must be rigorous and test deep understanding.
 - Start with "Q1:".`;
   return await callAIWithRetry(team, prompt);
 }
@@ -1120,24 +1126,21 @@ async function stagePrevYearQuestions(team, category, topicLabel) {
   const prompt =
     `You are an expert ${category} exam historian with access to past papers.
 
-Generate 5 previous-year-style questions on "${topicLabel}" for the ${category} exam.
-Each question should mirror the style, difficulty, and format of real ${category} past papers.
+Generate 8 high-fidelity previous-year-style questions on "${topicLabel}".
+Each question should mirror the style, complexity, and format of real ${category} past papers.
 
 OUTPUT — use this EXACT format:
 
 PYQ 1: [question text with specific numbers]
-ANSWER: [concise model answer or key steps]
+ANSWER: [comprehensive model answer with all logical steps]
 MARKS: [typical marks, e.g. 4 marks]
----
-PYQ 2: [question text]
-ANSWER: [model answer]
-MARKS: [marks]
 ---
 
 CRITICAL RULES:
-- Use UNICODE SYMBOLS ONLY (θ, π, ², √, Σ, Δ). NO LaTeX backslashes.
+- Generate EXACTLY 8 Questions.
+- Use UNICODE SYMBOLS ONLY. NO LaTeX.
 - Make questions feel authentic to the ${category} exam standard.
-- Plain text only. No JSON. No markdown. Start with "PYQ 1:".`;
+- Start with "PYQ 1:".`;
   return await callAIWithRetry(team, prompt);
 }
 
@@ -1294,7 +1297,7 @@ async function runTeamPipeline(team, index) {
       topicComplete: false,
       references: [`Official ${category} Prep Guide`, 'ScholarStock AI Content Engine'],
       suggestedPrice: difficulty === 'Easy' ? 5 : difficulty === 'Hard' ? 15 : 9,
-      pages: 10,
+      pages: 12,
       approved: false,
       fileUrl: null
     };
