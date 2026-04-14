@@ -8,6 +8,13 @@ const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const DraftMaterial = require('../models/DraftMaterial');
 
+// ── Environment Sanitization Helper ──
+const getEnv = (key) => {
+  const val = process.env[key];
+  if (!val || val === 'undefined') return '';
+  return val.replace(/['"]/g, '').trim();
+};
+
 // ── Auto-download DejaVu Sans (full Unicode support) on first run ──
 const FONTS_DIR = path.join(__dirname, '../fonts');
 const DEJAVU_PATH = path.join(FONTS_DIR, 'DejaVuSans.ttf');
@@ -35,22 +42,9 @@ async function ensureFonts() {
 ensureFonts();
 
 // ── Supabase client for PDF storage ──
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
-
-let supabase = null;
-if (supabaseUrl && supabaseKey && supabaseUrl !== 'undefined') {
-  try {
-    supabase = createClient(supabaseUrl, supabaseKey);
-    console.log('✅ Supabase initialized');
-  } catch (e) {
-    console.warn('⚠️ Supabase init failed:', e.message);
-  }
-} else {
-  console.warn('⚠️ Supabase credentials missing — PDF storage will be disabled');
-}
-
-const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'materials';
+const SUPABASE_BUCKET = getEnv('SUPABASE_BUCKET') || 'materials';
+const supabaseUrl = getEnv('SUPABASE_URL');
+const supabaseKey = getEnv('SUPABASE_SERVICE_KEY') || getEnv('SUPABASE_ANON_KEY');
 
 // Auto-create bucket if it doesn't exist (if supabase is available)
 async function ensureBucket() {
@@ -81,8 +75,8 @@ function makeProvider(name, type, endpoint, key, model, limit, quality, accountI
 
 // Helper for Cloudflare Workers AI
 function makeCFProvider(name, model, limit, quality) {
-  const cfKey = process.env.CLOUDFLARE_API_KEY || process.env.CF_API_KEY || process.env.CLOUDFLARE_API_TOKEN || process.env.CLOUDFLARE_TOKEN;
-  const cfAccount = process.env.CLOUDFLARE_ACCOUNT_ID || process.env.CF_ACCOUNT_ID;
+  const cfKey = getEnv('CLOUDFLARE_API_KEY') || getEnv('CF_API_KEY') || getEnv('CLOUDFLARE_API_TOKEN') || getEnv('CLOUDFLARE_TOKEN');
+  const cfAccount = getEnv('CLOUDFLARE_ACCOUNT_ID') || getEnv('CF_ACCOUNT_ID');
 
   return makeProvider(
     name, 
@@ -147,17 +141,15 @@ class AITeam {
 // TEAM ALPHA ⚡ — Powerhouse: Advanced/Hard Specialist (DeepSeek R1 + GPT-4o)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamAlpha = new AITeam('Alpha ⚡', [
-  makeProvider('α-groq-llama3.3-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 500, 'tier1'),
-  makeProvider('α-groq-llama3.1-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-70b-versatile', 500, 'tier1'),
-  makeProvider('α-cerebras-llama3.1-70b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama3.1-70b', 1000, 'tier1'),
-  makeProvider('α-openrouter-deepseek-v3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat', 1000, 'tier1'),
-  makeProvider('α-openrouter-llama3.3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-3.3-70b-instruct:free', 1000, 'tier1'),
-  makeProvider('α-github-gpt-4o', 'github', GH, process.env.GITHUB_TOKEN, 'gpt-4o', 50, 'tier1'),
-  makeProvider('α-gemini-2.0-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-2.0-flash', 250, 'tier1'),
-  makeProvider('α-openrouter-phi4', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'microsoft/phi-4:free', 1000, 'tier1'),
-  makeProvider('α-or-deepseek-r1-distill', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-r1-distill-llama-70b:free', 1000, 'tier1'),
+  makeProvider('α-groq-llama3.3-70b', 'groq', GRQ, getEnv('GROQ_API_KEY'), 'llama-3.3-70b-versatile', 500, 'tier1'),
+  makeProvider('α-cerebras-llama3.1-8b', 'cerebras', CER, getEnv('CEREBRAS_API_KEY'), 'llama3.1-8b', 1000, 'tier1'),
+  makeProvider('α-openrouter-deepseek-v3', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-chat', 1000, 'tier1'),
+  makeProvider('α-openrouter-llama3.3', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'meta-llama/llama-3.3-70b-instruct', 1000, 'tier1'),
+  makeProvider('α-github-gpt-4o', 'github', GH, getEnv('GITHUB_TOKEN'), 'gpt-4o', 50, 'tier1'),
+  makeProvider('α-gemini-2.0-flash', 'gemini', GEM, getEnv('GEMINI_API_KEY'), 'gemini-2.0-flash', 250, 'tier1'),
+  makeProvider('α-openrouter-phi4', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'microsoft/phi-4', 1000, 'tier1'),
+  makeProvider('α-or-deepseek-r1-distill', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-r1-distill-llama-70b', 1000, 'tier1'),
   makeCFProvider('α-cf-llama3.3-70b', '@cf/meta/llama-3.3-70b-instruct-fp8-fast', 200, 'tier1'),
-  makeProvider('α-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
 teamAlpha.role = 'Advanced Theory Specialist';
 
@@ -165,16 +157,16 @@ teamAlpha.role = 'Advanced Theory Specialist';
 // TEAM BETA 🧠 — Intelligence: MCQ/Practice Specialist (Kimi + Qwen + Cerebras)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamBeta = new AITeam('Beta 🧠', [
-  makeProvider('β-cerebras-llama3.1-8b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama3.1-8b', 1000, 'tier1'),
-  makeProvider('β-groq-llama3.3-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 500, 'tier1'),
-  makeProvider('β-openrouter-deepseek-chat', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat', 1000, 'tier1'),
-  makeProvider('β-github-gpt-4o-mini', 'github', GH, process.env.GITHUB_TOKEN, 'gpt-4o-mini', 50, 'tier1'),
-  makeProvider('β-gemini-1.5-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-1.5-flash', 500, 'tier1'),
-  makeProvider('β-openrouter-llama3.1-70b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-3.1-70b-instruct:free', 1000, 'tier1'),
-  makeProvider('β-mistral-large', 'mistral', MST, process.env.MISTRAL_API_KEY, 'mistral-large-latest', 100, 'tier1'),
-  makeProvider('β-openrouter-mistral-7b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'mistralai/mistral-7b-instruct:free', 1000, 'tier2'),
+  makeProvider('β-cerebras-llama3.1-8b', 'cerebras', CER, getEnv('CEREBRAS_API_KEY'), 'llama3.1-8b', 1000, 'tier1'),
+  makeProvider('β-groq-llama3.3-70b', 'groq', GRQ, getEnv('GROQ_API_KEY'), 'llama-3.3-70b-versatile', 500, 'tier1'),
+  makeProvider('β-openrouter-deepseek-chat', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-chat', 1000, 'tier1'),
+  makeProvider('β-github-gpt-4o-mini', 'github', GH, getEnv('GITHUB_TOKEN'), 'gpt-4o-mini', 50, 'tier1'),
+  makeProvider('β-gemini-2.0-flash', 'gemini', GEM, getEnv('GEMINI_API_KEY'), 'gemini-2.0-flash', 500, 'tier1'),
+  makeProvider('β-openrouter-llama3.1-70b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'meta-llama/llama-3.1-70b-instruct', 1000, 'tier1'),
+  makeProvider('β-mistral-large', 'mistral', MST, getEnv('MISTRAL_API_KEY'), 'mistral-large-latest', 100, 'tier1'),
+  makeProvider('β-openrouter-mistral-7b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'mistralai/mistral-7b-instruct', 1000, 'tier2'),
   makeCFProvider('β-cf-llama3.1-70b', '@cf/meta/llama-3.1-70b-instruct', 200, 'tier1'),
-  makeProvider('β-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
+  makeProvider('β-groq-llama3.1-8b', 'groq', GRQ, getEnv('GROQ_API_KEY'), 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
 teamBeta.role = 'Mass MCQ & Application Specialist';
 
@@ -182,18 +174,18 @@ teamBeta.role = 'Mass MCQ & Application Specialist';
 // TEAM GAMMA 🔥 — Diversity: Foundation & Notes Specialist (Gemini + Qwen + Llama)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamGamma = new AITeam('Gamma 🔥', [
-  makeProvider('γ-groq-llama3.3-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 500, 'tier1'),
-  makeProvider('γ-cerebras-llama3.1-70b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama3.1-70b', 1000, 'tier1'),
-  makeProvider('γ-openrouter-deepseek-v3', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'deepseek/deepseek-chat', 1000, 'tier1'),
-  makeProvider('γ-openrouter-llama3.1-405b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'meta-llama/llama-3.1-405b-instruct:free', 1000, 'tier1'),
-  makeProvider('γ-github-deepseek-v3', 'github', GH, process.env.GITHUB_TOKEN, 'deepseek-v3', 150, 'tier1'),
-  makeProvider('γ-gemini-1.5-flash', 'gemini', GEM, process.env.GEMINI_API_KEY, 'gemini-1.5-flash', 500, 'tier1'),
-  makeProvider('γ-mistral-small', 'mistral', MST, process.env.MISTRAL_API_KEY, 'mistral-small-latest', 100, 'tier1'),
-  makeProvider('γ-or-qwen2.5-72b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'qwen/qwen-2.5-72b-instruct:free', 1000, 'tier1'),
-  makeProvider('γ-or-gemma2-27b', 'openrouter', OR, process.env.OPENROUTER_API_KEY, 'google/gemma-2-27b-it:free', 1000, 'tier1'),
+  makeProvider('γ-groq-llama3.3-70b', 'groq', GRQ, getEnv('GROQ_API_KEY'), 'llama-3.3-70b-versatile', 500, 'tier1'),
+  makeProvider('γ-cerebras-llama3.1-70b', 'cerebras', CER, getEnv('CEREBRAS_API_KEY'), 'llama3.1-70b', 1000, 'tier1'),
+  makeProvider('γ-openrouter-deepseek-v3', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-chat', 1000, 'tier1'),
+  makeProvider('γ-openrouter-llama3.1-405b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'meta-llama/llama-3.1-405b-instruct', 1000, 'tier1'),
+  makeProvider('γ-github-deepseek-v3', 'github', GH, getEnv('GITHUB_TOKEN'), 'deepseek-v3', 150, 'tier1'),
+  makeProvider('γ-gemini-2.0-flash', 'gemini', GEM, getEnv('GEMINI_API_KEY'), 'gemini-2.0-flash', 500, 'tier1'),
+  makeProvider('γ-mistral-small', 'mistral', MST, getEnv('MISTRAL_API_KEY'), 'mistral-small-latest', 100, 'tier1'),
+  makeProvider('γ-or-qwen2.5-72b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'qwen/qwen-2.5-72b-instruct', 1000, 'tier1'),
+  makeProvider('γ-or-gemma2-27b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'google/gemma-2-27b-it', 1000, 'tier1'),
   makeCFProvider('γ-cf-mistral-7b', '@cf/mistral/mistral-7b-instruct-v0.2-lora', 200, 'tier1'),
-  makeProvider('γ-fireworks-llama70b', 'fireworks', FW, process.env.FIREWORKS_API_KEY, 'accounts/fireworks/models/llama-v3p1-70b-instruct', 100, 'tier2'),
-  makeProvider('γ-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
+  makeProvider('γ-fireworks-llama70b', 'fireworks', FW, getEnv('FIREWORKS_API_KEY'), 'accounts/fireworks/models/llama-v3p1-70b-instruct', 100, 'tier2'),
+  makeProvider('γ-groq-llama3.1-8b', 'groq', GRQ, getEnv('GROQ_API_KEY'), 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
 teamGamma.role = 'Foundation & Exam Research Specialist';
 
@@ -813,12 +805,16 @@ async function startCollection() {
     console.log(`\n┌─ Cycle #${cycleNum} | Starting 3 teams in parallel ─┐`);
 
     try {
-      // All 3 teams run their full 10-stage pipeline simultaneously
-      const [resultA, resultB, resultC] = await Promise.all([
-        runTeamPipeline(teamAlpha, batchIndex + 1),
-        runTeamPipeline(teamBeta, batchIndex + 2),
-        runTeamPipeline(teamGamma, batchIndex + 3)
-      ]);
+      // All 3 teams run their full 10-stage pipeline with staggered starts to avoid rate limiting
+      const resultA = await runTeamPipeline(teamAlpha, batchIndex + 1);
+      
+      console.log(`[Engine] Staggering team Beta start (4s)...`);
+      await new Promise(r => setTimeout(r, 4000));
+      const resultB = await runTeamPipeline(teamBeta, batchIndex + 2);
+      
+      console.log(`[Engine] Staggering team Gamma start (4s)...`);
+      await new Promise(r => setTimeout(r, 4000));
+      const resultC = await runTeamPipeline(teamGamma, batchIndex + 3);
 
       // Collect all 3 results
       let successInCycle = 0;
@@ -995,6 +991,11 @@ async function callAIWithRetry(team, prompt, maxRetries = 8) {
       console.warn(`  [${team.name}] ✗ ${provider.name} failed: ${err.message}`);
       
       // If we are rate limited or hit a 404/400, wait briefly before trying the next provider in the team
+      if (err.response?.status === 404) {
+        console.warn(`  [${team.name}] Model NOT FOUND (404) for ${provider.name}. Disabling provider.`);
+        provider.enabled = false;
+      }
+
       if (err.response?.status === 429 || err.response?.status === 402) {
         await new Promise(r => setTimeout(r, 1000 * attempt));
       }
@@ -1251,13 +1252,14 @@ async function runTeamPipeline(team, index) {
     currentStage = "2/12 Theory Notes";
     let theoryText = '';
     if (topicType !== 'questions') {
-      console.log(`[${team.name}] Stage ${currentStage}...`);
+      console.log(`  [${team.name}] [${difficulty}] Stage ${currentStage}...`);
       theoryText = await stageTheory(team, category, topicLabel, researchText);
     } else {
       theoryText = `Comprehensive Question Bank for ${topicLabel}. Detail Theory Notes and Master Sheets are available in our Premium Theory Pack.`;
     }
 
     currentStage = "3/12 Formulas";
+    console.log(`  [${team.name}] [${difficulty}] Stage ${currentStage}...`);
     let formulas = [];
     if (topicType !== 'questions') {
       const formulasText = await stageFormulas(team, category, topicLabel);
@@ -1265,11 +1267,13 @@ async function runTeamPipeline(team, index) {
     }
 
     currentStage = "4/12 Solved Examples";
+    console.log(`  [${team.name}] [${difficulty}] Stage ${currentStage}...`);
     let solvedExamples = [];
     const examplesText = await stageSolvedExamples(team, category, topicLabel);
     solvedExamples = parseSolvedExamples(examplesText);
 
     currentStage = "5/12 MCQs";
+    console.log(`  [${team.name}] [${difficulty}] Stage ${currentStage}...`);
     let mcqs = [];
     if (topicType !== 'notes') {
       const mcqs1Text = await stageMCQs(team, category, topicLabel, 1);
@@ -1279,18 +1283,23 @@ async function runTeamPipeline(team, index) {
     }
 
     currentStage = "6/12 Syllabus Map";
+    console.log(`  [${team.name}] [${difficulty}] Stage ${currentStage}...`);
     const syllabusMap = (topicType !== 'questions') ? await stageSyllabusMap(team, category, topicLabel) : '';
 
     currentStage = "7/12 Deep Dive";
+    console.log(`  [${team.name}] [${difficulty}] Stage ${currentStage}...`);
     const deepDive = (topicType !== 'questions') ? await stageDeepDive(team, category, topicLabel, theoryText) : '';
 
     currentStage = "8/12 Memory Tricks";
+    console.log(`  [${team.name}] [${difficulty}] Stage ${currentStage}...`);
     const memoryTricks = (topicType !== 'questions') ? await stageMemoryTricks(team, category, topicLabel) : '';
 
     currentStage = "9/12 Common Mistakes";
+    console.log(`  [${team.name}] [${difficulty}] Stage ${currentStage}...`);
     const commonMistakes = (topicType !== 'questions') ? await stageCommonMistakes(team, category, topicLabel) : '';
 
     currentStage = "10/12 PYQs";
+    console.log(`  [${team.name}] [${difficulty}] Stage ${currentStage}...`);
     let prevYearQuestions = [];
     if (topicType !== 'notes') {
       const pyqText = await stagePrevYearQuestions(team, category, topicLabel);
@@ -1371,35 +1380,72 @@ async function stageDiagram(team, result) {
 // PARSERS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// UNIVERSAL PARSER — Robust JSON & Text Recovery
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function universalParser(text, type = 'text') {
+  if (!text) return type === 'json' ? {} : '';
+  
+  // 1. Clean Markdown
+  let clean = text.replace(/```(?:json|html|text|latex)?/gi, '').replace(/```/g, '').trim();
+  
+  // 2. Remove AI Preamble (e.g. "Here is the content:")
+  // If we expect JSON, try to find the first '{' and last '}'
+  if (type === 'json') {
+    try {
+      const start = clean.indexOf('{');
+      const end = clean.lastIndexOf('}');
+      if (start !== -1 && end !== -1) {
+        clean = clean.substring(start, end + 1);
+      }
+      return JSON.parse(clean);
+    } catch (e) {
+      console.warn('UniversalParser: JSON parse failed, falling back to regex extraction');
+    }
+  }
+
+  // 3. Text cleanup (Remove control characters)
+  return clean.replace(/[\x00-\x1F\x7F-\x9F]/g, "").trim();
+}
+
 function parseFormulas(text) {
-  if (!text) return [];
-  return text.split('\n').map(l => l.trim()).filter(l => l.includes('=') || l.includes(':'));
+  const clean = universalParser(text);
+  if (!clean) return [];
+  return clean.split('\n').map(l => l.trim()).filter(l => l.includes('=') || l.includes(':'));
 }
 
 function parseSolvedExamples(text) {
-  if (!text) return [];
+  const clean = universalParser(text);
+  if (!clean) return [];
   const examples = [];
-  const blocks = text.split(/---+/).map(b => b.trim()).filter(Boolean);
+  const blocks = clean.split(/---+/).map(b => b.trim()).filter(Boolean);
   for (const block of blocks) {
-    const probMatch = block.match(/PROBLEM\s*\d+:\s*([\s\S]*?)(?=SOLUTION:)/i);
+    const probMatch = block.match(/PROBLEM\s*\d*:\s*([\s\S]*?)(?=SOLUTION:)/i);
     const solMatch = block.match(/SOLUTION:\s*([\s\S]*)/i);
     if (probMatch && solMatch) examples.push({ question: probMatch[1].trim(), solution: solMatch[1].trim() });
+    else if (block.includes('PROBLEM') && block.includes('SOLUTION')) {
+      // Fallback for non-numbered or messy blocks
+      const parts = block.split(/SOLUTION:/i);
+      examples.push({ question: parts[0].replace(/PROBLEM\s*\d*:/i, '').trim(), solution: parts[1].trim() });
+    }
   }
   return examples;
 }
 
 function parseMCQs(text) {
-  if (!text) return [];
+  const clean = universalParser(text);
+  if (!clean) return [];
   const mcqs = [];
-  const blocks = text.split(/---+/).map(b => b.trim()).filter(Boolean);
+  const blocks = clean.split(/---+/).map(b => b.trim()).filter(Boolean);
   for (const block of blocks) {
-    const qMatch = block.match(/Q\d+:\s*([\s\S]*?)(?=\nA\))/i);
+    const qMatch = block.match(/Q\d*:\s*([\s\S]*?)(?=\nA\))/i);
     const options = block.match(/^[A-D]\)\s*(.*)/gm);
     const ansMatch = block.match(/ANSWER:\s*([A-D])/i);
     const expMatch = block.match(/EXPLANATION:\s*([\s\S]*)/i);
-    if (qMatch && ansMatch) {
+    if ((qMatch || block.startsWith('Q')) && ansMatch) {
       mcqs.push({
-        q: qMatch[1].trim(),
+        q: qMatch ? qMatch[1].trim() : block.split('\nA)')[0].replace(/Q\d*:/i, '').trim(),
         options: options || ['A) Option A', 'B) Option B', 'C) Option C', 'D) Option D'],
         answer: ansMatch[1].trim(),
         explanation: expMatch ? expMatch[1].trim() : ''
@@ -1410,11 +1456,12 @@ function parseMCQs(text) {
 }
 
 function parsePYQs(text) {
-  if (!text) return [];
+  const clean = universalParser(text);
+  if (!clean) return [];
   const pyqs = [];
-  const blocks = text.split(/---+/).map(b => b.trim()).filter(Boolean);
+  const blocks = clean.split(/---+/).map(b => b.trim()).filter(Boolean);
   for (const block of blocks) {
-    const qMatch = block.match(/PYQ\s*\d+:\s*([\s\S]*?)(?=ANSWER:)/i);
+    const qMatch = block.match(/PYQ\s*\d*:\s*([\s\S]*?)(?=ANSWER:)/i);
     const ansMatch = block.match(/ANSWER:\s*([\s\S]*?)(?=MARKS:|$)/i);
     const marksMatch = block.match(/MARKS:\s*(.*)/i);
     if (qMatch && ansMatch) pyqs.push({ question: qMatch[1].trim(), answer: ansMatch[1].trim(), marks: marksMatch ? marksMatch[0].trim() : 'N/A' });
