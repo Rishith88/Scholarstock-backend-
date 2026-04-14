@@ -253,6 +253,9 @@ router.post('/start', auth, verifyAdmin, async (req, res) => {
       difficulty_distribution: { Easy: 0, Medium: 0, Hard: 0 }
     };
 
+    // Auto-Reset all 3 team usage counters for a fresh topic start
+    allTeams.forEach(t => t.resetUsage());
+
     res.json({
       success: true,
       message: `Starting ${topicType || 'complete'} content generation for ${subcategory}`,
@@ -818,15 +821,17 @@ async function startCollection() {
       ]);
 
       // Collect all 3 results
+      let successInCycle = 0;
       for (const result of [resultA, resultB, resultC]) {
         if (result && !result.isError) {
+          successInCycle++;
           contentEngine.collected.push(result);
           contentEngine.totalGenerated++;
           
           // PERSISTENCE: Save to MongoDB Drafts immediately
           try {
             await DraftMaterial.create(result);
-            console.log(`  [Storage] Draft saved for #${batchIndex + 1}`);
+            console.log(`  [Storage] Draft saved for #${contentEngine.totalGenerated}`);
           } catch (e) {
             console.error(`  [Storage] Failed to save draft: ${e.message}`);
           }
@@ -834,11 +839,23 @@ async function startCollection() {
           if (result.formulas) contentEngine.coverage.formulas.push(...result.formulas);
           if (result.topicsCovered) contentEngine.coverage.topics.push(...result.topicsCovered);
           if (result.difficulty) contentEngine.coverage.difficulty_distribution[result.difficulty]++;
+        } else if (result && result.isError) {
+          console.warn(`  [Engine] Team ${result.debugInfo?.team || 'Unknown'} reported failure at stage: ${result.debugInfo?.stage || 'Unknown'}`);
         }
       }
 
-      consecutiveFailures = 0;
-      console.log(`└─ Cycle #${cycleNum} complete | Total collected: ${contentEngine.totalGenerated} ─┘\n`);
+      if (successInCycle > 0) {
+        consecutiveFailures = 0;
+        console.log(`└─ Cycle #${cycleNum} complete | Successfully added: ${successInCycle} | Total: ${contentEngine.totalGenerated} ─┘\n`);
+      } else {
+        consecutiveFailures++;
+        console.warn(`└─ Cycle #${cycleNum} FAILED | All 3 teams returned errors. Failures: ${consecutiveFailures}/${maxCycleFailures} ─┘\n`);
+        if (consecutiveFailures >= maxCycleFailures) {
+          contentEngine.error = `Stalled: 5 consecutive cycles failed to produce any content. Check API keys and logs.`;
+          contentEngine.running = false;
+          break;
+        }
+      }
 
       if (contentEngine.collected.length >= 500) {
         contentEngine.topicComplete = true;
@@ -847,10 +864,10 @@ async function startCollection() {
       }
 
     } catch (err) {
-      console.error(`Cycle #${cycleNum} error: ${err.message}`);
+      console.error(`Cycle #${cycleNum} CRITICAL error: ${err.message}`);
       consecutiveFailures++;
       if (consecutiveFailures >= maxCycleFailures) {
-        contentEngine.error = `Too many cycle failures: ${err.message}`;
+        contentEngine.error = `Aborted: Too many critical cycle errors: ${err.message}`;
         contentEngine.running = false;
         break;
       }
