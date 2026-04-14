@@ -6,6 +6,7 @@ const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
+const DraftMaterial = require('../models/DraftMaterial');
 
 // ── Auto-download DejaVu Sans (full Unicode support) on first run ──
 const FONTS_DIR = path.join(__dirname, '../fonts');
@@ -114,17 +115,7 @@ class AITeam {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// TEAM ALPHA ⚡ — Powerhouse: DeepSeek reasoning + Cerebras speed + GPT-4o
-// Cloudflare Workers AI helper (accountId baked in)
-function makeCFProvider(name, model, limit, quality) {
-  const key = process.env.CLOUDFLARE_API_TOKEN;
-  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
-  const enabled = !!(key && key !== 'undefined' && key.length > 5 && accountId);
-  if (!enabled) console.warn(`⚠  CF Provider ${name} disabled — set CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID`);
-  return { name, type: 'cloudflare', endpoint: null, key, model, usage: 0, limit, enabled, quality, accountId };
-}
-
-// Each provider is a fresh object so usage counters are independent per team
+// TEAM ALPHA ⚡ — Powerhouse: Advanced/Hard Specialist (DeepSeek R1 + GPT-4o)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamAlpha = new AITeam('Alpha ⚡', [
   makeProvider('α-groq-llama3.3-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 500, 'tier1'),
@@ -139,9 +130,10 @@ const teamAlpha = new AITeam('Alpha ⚡', [
   makeCFProvider('α-cf-llama3.3-70b', '@cf/meta/llama-3.3-70b-instruct-fp8-fast', 200, 'tier1'),
   makeProvider('α-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
+teamAlpha.role = 'Advanced Theory Specialist';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// TEAM BETA 🧠 — Intelligence: Kimi + Qwen + Grok + Cerebras Qwen
+// TEAM BETA 🧠 — Intelligence: MCQ/Practice Specialist (Kimi + Qwen + Cerebras)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamBeta = new AITeam('Beta 🧠', [
   makeProvider('β-cerebras-llama3.1-8b', 'cerebras', CER, process.env.CEREBRAS_API_KEY, 'llama3.1-8b', 1000, 'tier1'),
@@ -155,9 +147,10 @@ const teamBeta = new AITeam('Beta 🧠', [
   makeCFProvider('β-cf-llama3.1-70b', '@cf/meta/llama-3.1-70b-instruct', 200, 'tier1'),
   makeProvider('β-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
+teamBeta.role = 'Mass MCQ & Application Specialist';
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// TEAM GAMMA 🔥 — Diversity: DeepSeek V3 + Llama4-Scout + GPT-OSS + Mistral
+// TEAM GAMMA 🔥 — Diversity: Foundation & Notes Specialist (Gemini + Qwen + Llama)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamGamma = new AITeam('Gamma 🔥', [
   makeProvider('γ-groq-llama3.3-70b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.3-70b-versatile', 500, 'tier1'),
@@ -173,6 +166,7 @@ const teamGamma = new AITeam('Gamma 🔥', [
   makeProvider('γ-fireworks-llama70b', 'fireworks', FW, process.env.FIREWORKS_API_KEY, 'accounts/fireworks/models/llama-v3p1-70b-instruct', 100, 'tier2'),
   makeProvider('γ-groq-llama3.1-8b', 'groq', GRQ, process.env.GROQ_API_KEY, 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
+teamGamma.role = 'Foundation & Exam Research Specialist';
 
 // All 3 teams
 const allTeams = [teamAlpha, teamBeta, teamGamma];
@@ -307,6 +301,16 @@ router.get('/preview', auth, verifyAdmin, async (req, res) => {
     items: contentEngine.collected,
     total: contentEngine.collected.length
   });
+});
+
+// GET /api/content-engine/drafts - NEW: Retrieve persisted drafts from MongoDB
+router.get('/drafts', auth, verifyAdmin, async (req, res) => {
+  try {
+    const drafts = await DraftMaterial.find().sort({ createdAt: -1 }).limit(100);
+    res.json({ success: true, drafts });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
 });
 
 // GET /api/content-engine/test-providers — test one call per team, return results
@@ -446,7 +450,7 @@ function renderPdfContent(doc, item) {
   // ── Helper: body text ──
   function bodyText(text, opts = {}) {
     doc.fontSize(10.5).fillColor('#334155').font(bodyFont)
-      .text(text, L, doc.y, { width: CW, align: 'justify', lineGap: 3, paragraphGap: 6, ...opts });
+      .text(text, L, doc.y, { width: CW, align: 'left', lineGap: 5, paragraphGap: 10, ...opts });
   }
 
   // ── Helper: numbered list ──
@@ -454,7 +458,8 @@ function renderPdfContent(doc, item) {
     lines.forEach((line, i) => {
       if (doc.y > H - 80) newPage('continued');
       doc.fontSize(10).fillColor(color).font(bodyFont)
-        .text(`${i + 1}.  ${line}`, L + 10, doc.y, { width: CW - 10, lineGap: 2, paragraphGap: 5 });
+        .text(`${i + 1}.  ${line}`, L + 10, doc.y, { width: CW - 20, lineGap: 4, paragraphGap: 8 });
+      doc.moveDown(0.2);
     });
   }
 
@@ -494,16 +499,13 @@ function renderPdfContent(doc, item) {
   // ── 2. Formulas ──
   if (item.formulas && item.formulas.length > 0) {
     sectionHeading('Key Formulas & Constants', '#3b82f6');
-    const startY = doc.y;
-    const boxH = item.formulas.length * 22 + 16;
-    doc.rect(L, startY, CW, boxH).fill('#f8fafc');
-    doc.rect(L, startY, 4, boxH).fill('#3b82f6');
     item.formulas.forEach((f, i) => {
-      doc.fontSize(10).fillColor('#1e293b').font(boldFont)
-        .text(`${i + 1}. `, L + 10, startY + 10 + i * 22, { continued: true })
-        .font(bodyFont).text(f);
+      if (doc.y > H - 60) newPage('Key Formulas');
+      const startY = doc.y;
+      doc.fontSize(10.5).fillColor('#1e293b').font(boldFont).text(`${i + 1}. `, L + 10, startY, { continued: true })
+        .font(bodyFont).text(f, { lineGap: 4 });
+      doc.moveDown(0.5);
     });
-    doc.y = startY + boxH + 10;
     doc.moveDown(1);
   }
 
@@ -512,47 +514,45 @@ function renderPdfContent(doc, item) {
     newPage('Solved Examples');
     sectionHeading('Solved Examples', '#0f172a');
     item.solvedExamples.forEach((ex, i) => {
-      if (doc.y > H - 120) newPage('Solved Examples');
-      doc.fontSize(10.5).fillColor('#1e293b').font(boldFont)
-        .text(`Example ${i + 1}: `, L, doc.y, { continued: true })
-        .font(bodyFont).fillColor('#334155').text(ex.question, { width: CW });
-      doc.moveDown(0.4);
-      doc.fontSize(10.5).fillColor('#059669').font(boldFont)
-        .text('Solution: ', L + 10, doc.y, { continued: true })
-        .font(bodyFont).fillColor('#334155').text(ex.solution, { width: CW - 10 });
-      doc.moveDown(1.2);
+      if (doc.y > H - 150) newPage('Solved Examples');
+      doc.fontSize(11).fillColor('#1e293b').font(boldFont).text(`Example ${i + 1}: `, L, doc.y);
+      doc.moveDown(0.2);
+      doc.fontSize(10.5).fillColor('#334155').font(bodyFont).text(ex.question, { width: CW, lineGap: 3 });
+      doc.moveDown(0.6);
+      doc.fontSize(10.5).fillColor('#059669').font(boldFont).text('Solution:');
+      doc.moveDown(0.2);
+      doc.fontSize(10.5).fillColor('#334155').font(bodyFont).text(ex.solution, { width: CW - 10, lineGap: 3, indent: 10 });
+      doc.moveDown(1.5);
     });
   }
 
   // ── 4. MCQs ──
   if (item.mcqs && item.mcqs.length > 0) {
     newPage('Practice MCQs');
-    doc.fontSize(14).fillColor('#60a5fa').font(boldFont).text('PRACTICE QUESTIONS (MCQs)', L, doc.y);
-    doc.moveDown(1);
+    sectionHeading('Practice Questions (MCQs)', '#60a5fa');
     item.mcqs.forEach((mcq, i) => {
-      if (doc.y > H - 150) newPage('Practice MCQs');
-      doc.fontSize(10.5).fillColor('#1e293b').font(boldFont)
-        .text(`Q${i + 1}. `, L, doc.y, { continued: true })
-        .font(bodyFont).text(mcq.q, { width: CW });
+      if (doc.y > H - 180) newPage('Practice MCQs');
+      doc.fontSize(11).fillColor('#1e293b').font(boldFont).text(`Q${i + 1}. `, L, doc.y, { continued: true })
+        .font(bodyFont).text(mcq.q, { width: CW, lineGap: 3 });
       doc.moveDown(0.5);
       
       mcq.options.forEach((opt) => {
         if (doc.y > H - 60) newPage('Practice MCQs');
-        doc.fontSize(9.5).fillColor('#475569').font(bodyFont).text(opt, L + 15, doc.y, { width: CW - 25 });
+        doc.fontSize(10).fillColor('#475569').font(bodyFont).text(opt, L + 20, doc.y, { width: CW - 30, lineGap: 2 });
         doc.moveDown(0.2);
       });
       
-      doc.moveDown(0.3);
-      if (doc.y > H - 60) newPage('Practice MCQs');
-      doc.fontSize(9.5).fillColor('#059669').font(boldFont)
-        .text('Answer: ', L + 15, doc.y, { continued: true })
+      doc.moveDown(0.5);
+      if (doc.y > H - 80) newPage('Practice MCQs');
+      doc.fontSize(10).fillColor('#059669').font(boldFont).text('Correct Answer: ', L + 20, doc.y, { continued: true })
         .font(bodyFont).text(mcq.answer);
       
       if (mcq.explanation) {
-        doc.fontSize(9).fillColor('#64748b').font(bodyFont)
-          .text(`Explanation: ${mcq.explanation}`, L + 15, doc.y, { width: CW - 25 });
+        doc.moveDown(0.3);
+        doc.fontSize(9.5).fillColor('#64748b').font(bodyFont)
+          .text(`Explanation: ${mcq.explanation}`, L + 20, doc.y, { width: CW - 30, lineGap: 2, align: 'left' });
       }
-      doc.moveDown(1.5);
+      doc.moveDown(1.8);
     });
   }
 
@@ -591,11 +591,62 @@ function renderPdfContent(doc, item) {
   }
 
   // ── 9. Previous Year Questions ──
-  if (item.prevYearQuestions) {
+  if (item.prevYearQuestions && item.prevYearQuestions.length > 0) {
     newPage('Previous Year Questions');
     sectionHeading('Previous Year Questions', '#eab308');
-    bodyText(item.prevYearQuestions);
+    item.prevYearQuestions.forEach((pyq, i) => {
+      if (doc.y > H - 150) newPage('Previous Year Questions');
+      doc.fontSize(11).fillColor('#1e293b').font(boldFont).text(`Question ${i + 1}: `, L, doc.y);
+      doc.moveDown(0.2);
+      doc.fontSize(10.5).fillColor('#334155').font(bodyFont).text(pyq.question, { width: CW, lineGap: 3 });
+      doc.moveDown(0.4);
+      doc.fontSize(10).fillColor('#64748b').font(bodyFont).text(`[Weightage: ${pyq.marks}]`, L, doc.y);
+      doc.moveDown(0.4);
+      doc.fontSize(10.5).fillColor('#059669').font(boldFont).text('Model Answer:');
+      doc.moveDown(0.2);
+      doc.fontSize(10.5).fillColor('#334155').font(bodyFont).text(pyq.answer, { width: CW - 10, lineGap: 3, indent: 10 });
+      doc.moveDown(1.5);
+    });
+  }
+
+  // ── 11. AI DIAGRAMS & VISUALS ──
+  if (item.diagramDescription) {
+    newPage('Visual Aids');
+    sectionHeading('Visual Diagrams & Structural Flow', '#ec4899');
+    doc.rect(L, doc.y, CW, 120).fill('#fdf2f8');
+    doc.fontSize(10).fillColor('#be185d').font(boldFont).text('AI-GENERATED VISUAL PROMPT:', L + 15, doc.y + 15);
+    doc.moveDown(0.5);
+    doc.fontSize(10).fillColor('#334155').font(bodyFont).text(item.diagramDescription, L + 15, doc.y, { width: CW - 30, lineGap: 3 });
+    doc.moveDown(2);
+    doc.fontSize(9).fillColor('#9d174d').font(bodyFont).text('[Interactive diagram rendering available in ScholarStock Web App]', { align: 'center', width: CW });
+    doc.y += 40;
+  }
+
+  // ── 12. QUALITY AUDIT REPORT ──
+  if (item.auditReport) {
+    newPage('Audit Report');
+    sectionHeading('ScholarStock Quality Assurance', '#475569');
+    doc.rect(L, doc.y, CW, 150).fill('#f8fafc').strokeColor('#cbd5e1').stroke();
+    doc.fontSize(11).fillColor('#1e293b').font(boldFont).text('ELITE-GRADE AUDIT LOG:', L + 15, doc.y + 15);
+    doc.moveDown(0.8);
+    doc.fontSize(10).fillColor('#475569').font(bodyFont).text(item.auditReport, L + 15, doc.y, { width: CW - 30, lineGap: 4 });
+    doc.moveDown(2);
+  }
+
+  // ── Final Mastery Checklist ──
+  if (item.category && item.subcategory) {
+    if (doc.y > H - 200) newPage('Checklist');
+    sectionHeading('Final Mastery Checklist', '#059669');
+    doc.fontSize(10).fillColor('#475569').font(bodyFont).text('Ensure you have mastered these sub-topics before the exam:', L, doc.y);
     doc.moveDown(1);
+    const subtopics = (item.topicsCovered || [item.subcategory]).slice(0, 1).concat(['Critical Formula Recall', 'Edge Case Analysis', 'Time Paradox Questions', 'Historical Year Trends']);
+    subtopics.forEach(st => {
+      doc.rect(L, doc.y, 12, 12).strokeColor('#cbd5e1').stroke();
+      doc.fontSize(10.5).fillColor('#1e293b').font(bodyFont).text(st, L + 20, doc.y - 2, { width: CW - 20 });
+      doc.moveDown(0.8);
+    });
+    doc.moveDown(1);
+    doc.fontSize(9).fillColor('#64748b').font(bodyFont).text('Note: This document is an elite-grade study resource. Sharing outside the ScholarStock network is strictly prohibited.', { align: 'center', width: CW });
   }
 
   // ── Watermark on all pages ──
@@ -739,9 +790,18 @@ async function startCollection() {
 
       // Collect all 3 results
       for (const result of [resultA, resultB, resultC]) {
-        if (result) {
+        if (result && !result.isError) {
           contentEngine.collected.push(result);
           contentEngine.totalGenerated++;
+          
+          // PERSISTENCE: Save to MongoDB Drafts immediately
+          try {
+            await DraftMaterial.create(result);
+            console.log(`  [Storage] Draft saved for #${batchIndex + 1}`);
+          } catch (e) {
+            console.error(`  [Storage] Failed to save draft: ${e.message}`);
+          }
+
           if (result.formulas) contentEngine.coverage.formulas.push(...result.formulas);
           if (result.topicsCovered) contentEngine.coverage.topics.push(...result.topicsCovered);
           if (result.difficulty) contentEngine.coverage.difficulty_distribution[result.difficulty]++;
@@ -902,17 +962,22 @@ async function callAIWithRetry(team, prompt, maxRetries = 8) {
 // Goal: Get a structured list of key concepts for the topic
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function stageResearch(team, category, topicLabel) {
+  const isHighComplexity = ['JEE', 'NEET', 'GATE', 'UPSC', 'IIT'].includes(category.toUpperCase());
+  const count = isHighComplexity ? 40 : 20;
+
   const prompt =
     `You are a Senior Academic Researcher specializing in the ${category} exam curriculum.
     
 Your goal is to provide a COMPREHENSIVE RESEARCH DOSSIER for the topic: "${topicLabel}".
 
-List the 15 most critical concepts, hidden nuances, and high-yield facts that distinguish top-tier ${category} candidates.
+List the ${count} most critical concepts, hidden nuances, high-yield facts, and common examiners' favorite "trap" areas.
+Since this is for ${category}, ensure the level of depth matches the exam's rigor. 
 
 OUTPUT RULES:
 - Numbered list only. One breakthrough concept per line.
 - Plain text. No JSON. No markdown. NO LaTeX.
 - Focus on concepts that actually appear in the most recent ${category} papers.
+- Be extremely detailed and specific. Avoid generic statements.
 
 1. `;
   return await callAIWithRetry(team, prompt);
@@ -923,20 +988,33 @@ OUTPUT RULES:
 // Goal: 3 clear paragraphs of conceptual explanation
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function stageTheory(team, category, topicLabel, researchPoints) {
+  const isHighComplexity = ['JEE', 'NEET', 'GATE', 'UPSC', 'IIT'].includes(category.toUpperCase());
+  const lengthGuide = isHighComplexity ? "at least 25-30 exhaustive, dense paragraphs" : "at least 15-20 dense paragraphs";
+
   const prompt =
-    `You are a Lead Educator writing an EXTENDED master-class textbook for the ${category} exam.
+    `You are the [${team.role}] writing an EXTENDED master-class textbook.
     
-Write an exhaustive, high-level conceptual theory for "${topicLabel}".
+Write an exhaustive, high-level conceptual theory for "${topicLabel}". 
+${team.name === 'Alpha ⚡' ? 'FOCUS: Focus on heavy derivation, first-principles logic, and rigorous edge cases.' : ''}
+${team.name === 'Beta 🧠' ? 'FOCUS: Use clear, actionable language, many bullet points, and relate concepts to common exam patterns.' : ''}
+${team.name === 'Gamma 🔥' ? 'FOCUS: Focus on the historical context, foundational basics, and how this relates to other syllabus topics.' : ''}
+
+[DEMANDED SECTIONS]:
+1. THEORETICAL FOUNDATION: Explain the first principles and historical evolution.
+2. CORE CONCEPTS: Exhaustive detail on every sub-topic listed in research.
+3. MATHEMATICAL DERIVATIONS: Provide thorough step-by-step proofs for all primary formulas.
+4. LOGICAL FALLACIES & PARADOXES: Discuss common conceptual traps and edge cases.
+5. ADVANCED INTEGRATION: How this topic connects to other areas of the ${category} syllabus.
 
 Key points to integrate:
 ${researchPoints}
 
 OUTPUT RULES:
-- Exactly 6 dense, academic paragraphs of flowing prose.
-- Maximize technical accuracy. Use high-level vocabulary appropriate for ${category}.
+- Provide ${lengthGuide} of flowing prose. Depth is the absolute priority.
+- Explain from first principles to advanced elite application.
 - Plain text only. No bullets/headings. NO LaTeX.
-- Use Unicode (θ, π, ², √, Σ, Δ, ±, ≤, ≥, ≈).
-- START DIRECTLY with the explanation. NO preambles.`;
+- Use Unicode (θ, π, ², ³, √, Σ, Δ, ±, ≤, ≥, ≈, λ, μ, α, β, γ, Ω).
+- START DIRECTLY. NO preambles.`;
   return await callAIWithRetry(team, prompt);
 }
 
@@ -970,65 +1048,55 @@ CRITICAL RULES:
 // Goal: 3 step-by-step solved problems in a parseable plain-text format
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function stageSolvedExamples(team, category, topicLabel) {
-  const prompt =
-    `You are a ${category} specialized tutor.
+  const isHighComplexity = ['JEE', 'NEET', 'GATE', 'UPSC', 'IIT'].includes(category.toUpperCase());
+  const count = isHighComplexity ? 15 : 8;
 
-Create 5 EXTENDED master-level step-by-step solved problems about "${topicLabel}".
-Difficulty: 1 Easy, 2 Medium, 2 Hard (analytical/trap).
+  const prompt =
+    `You are the [${team.role}] writing solved examples for a masterclass.
+
+Create ${count} EXTENDED step-by-step solved problems about "${topicLabel}".
+Each problem should have a clear "PROBLEM" statement and a "SOLUTION" that shows every logical and mathematical step.
+${team.name === 'Alpha ⚡' ? 'FOCUS: Include at least 2 "Bonus Challenge" problems that go beyond the syllabus.' : ''}
+${team.name === 'Beta 🧠' ? 'FOCUS: Focus on the fastest "calculator-free" methods and elimination logic.' : ''}
 
 OUTPUT FORMAT:
-
-PROBLEM 1: [foundational question]
-SOLUTION: [exhaustive step-by-step logic]
+PROBLEM 1: [text]
+SOLUTION: [detailed steps]
 ---
-PROBLEM 2: [application level]
-SOLUTION: [logic]
----
-PROBLEM 3: [application level]
-SOLUTION: [logic]
----
-PROBLEM 4: [advanced analytical]
-SOLUTION: [logic]
----
-PROBLEM 5: [extreme difficulty/trap]
-SOLUTION: [logic]
-
-CRITICAL RULES:
-- Use UNICODE math symbols ONLY. NO LaTeX \\ backslashes.
-- Numbers must be unique and non-standard.
-- Start with "PROBLEM 1:".`;
+`;
   return await callAIWithRetry(team, prompt);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// STAGE 5 — MCQs
-// Goal: 8 MCQs in a parseable plain-text format
+// STAGE 5 — MULTIPLE CHOICE QUESTIONS (MCQs)
+// Goal: 20-25 questions per part (total 40-50) with tricky options
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function stageMCQs(team, category, topicLabel) {
+async function stageMCQs(team, category, topicLabel, part = 1) {
+  const isHighComplexity = ['JEE', 'NEET', 'GATE', 'UPSC', 'IIT'].includes(category.toUpperCase());
+  const count = isHighComplexity ? 25 : 20;
+
   const prompt =
-    `You are a Senior Question Setter for the ${category} examination board.
-    
-Generate 15 ELITE-QUALITY MCQs for "${topicLabel}".
-Difficulty: 4 Easy, 7 Medium, 4 Elite (Complex).
+    `You are the [${team.role}] setting a high-stakes exam paper.
 
-FORMAT FOR EVERY QUESTION:
+Generate ${count} ELITE-QUALITY MCQs (Part ${part}) for "${topicLabel}".
+${team.name === 'Alpha ⚡' ? 'FOCUS: Create "multi-concept" questions that require integrating multiple topics to solve.' : ''}
+${team.name === 'Beta 🧠' ? 'FOCUS: Focus on tricky distractors (wrong options) and common pitfalls.' : ''}
+${team.name === 'Gamma 🔥' ? 'FOCUS: Ensure standard exam phrasing and perfect syllabus weightage.' : ''}
 
-Q1: [question text]
-A) [option]
-B) [option]
-C) [option]
-D) [option]
-ANSWER: [A or B or C or D]
-EXPLANATION: [exhaustive deep dive into the logic, traps, and conceptual reasons]
+OUTPUT FORMAT:
+Q1: [Question text]
+A) [Option]
+B) [Option]
+C) [Option]
+D) [Option]
+ANSWER: [A/B/C/D]
+EXPLANATION: [Brief reason why]
 ---
-
-RULES:
-- Generete EXACTLY 15 QUESTIONS.
-- UNICODE SYMBOLS ONLY. NO LaTeX.
-- Questions must be rigorous and test deep understanding.
-- Start with "Q1:".`;
+`;
   return await callAIWithRetry(team, prompt);
 }
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // STAGE 6 — SYLLABUS MAP
@@ -1118,42 +1186,148 @@ RULES:
   return await callAIWithRetry(team, prompt);
 }
 
+async function runTeamPipeline(team, index) {
+  const { category, subcategory, topicType } = contentEngine.currentTopic;
+  const topicLabel = subcategory || `All ${category} topics`;
+  const difficulties = ['Easy', 'Medium', 'Hard'];
+  const difficulty = difficulties[index % 3];
+
+  await new Promise(r => setTimeout(r, Math.random() * 5000));
+
+  console.log(`[Pipeline #${index}] [${team.name}] Role: ${team.role} | ${difficulty}`);
+  let currentStage = "Starting";
+
+  try {
+    currentStage = "1/12 Research";
+    console.log(`[${team.name}] Stage ${currentStage}...`);
+    const researchText = await stageResearch(team, category, topicLabel);
+
+    currentStage = "2/12 Theory Notes";
+    let theoryText = '';
+    if (topicType !== 'questions') {
+      console.log(`[${team.name}] Stage ${currentStage}...`);
+      theoryText = await stageTheory(team, category, topicLabel, researchText);
+    } else {
+      theoryText = `Comprehensive Question Bank for ${topicLabel}. Detail Theory Notes and Master Sheets are available in our Premium Theory Pack.`;
+    }
+
+    currentStage = "3/12 Formulas";
+    let formulas = [];
+    if (topicType !== 'questions') {
+      const formulasText = await stageFormulas(team, category, topicLabel);
+      formulas = parseFormulas(formulasText);
+    }
+
+    currentStage = "4/12 Solved Examples";
+    let solvedExamples = [];
+    const examplesText = await stageSolvedExamples(team, category, topicLabel);
+    solvedExamples = parseSolvedExamples(examplesText);
+
+    currentStage = "5/12 MCQs";
+    let mcqs = [];
+    if (topicType !== 'notes') {
+      const mcqs1Text = await stageMCQs(team, category, topicLabel, 1);
+      mcqs = parseMCQs(mcqs1Text);
+      const mcqs2Text = await stageMCQs(team, category, topicLabel, 2);
+      mcqs.push(...parseMCQs(mcqs2Text));
+    }
+
+    currentStage = "6/12 Syllabus Map";
+    const syllabusMap = (topicType !== 'questions') ? await stageSyllabusMap(team, category, topicLabel) : '';
+
+    currentStage = "7/12 Deep Dive";
+    const deepDive = (topicType !== 'questions') ? await stageDeepDive(team, category, topicLabel, theoryText) : '';
+
+    currentStage = "8/12 Memory Tricks";
+    const memoryTricks = (topicType !== 'questions') ? await stageMemoryTricks(team, category, topicLabel) : '';
+
+    currentStage = "9/12 Common Mistakes";
+    const commonMistakes = (topicType !== 'questions') ? await stageCommonMistakes(team, category, topicLabel) : '';
+
+    currentStage = "10/12 PYQs";
+    let prevYearQuestions = [];
+    if (topicType !== 'notes') {
+      const pyqText = await stagePrevYearQuestions(team, category, topicLabel);
+      prevYearQuestions = parsePYQs(pyqText);
+    }
+
+    const typeSuffix = {
+      questions: ' (Question Bank)',
+      notes: ' (Theory Notes)',
+      complete: ' (Complete Pack)'
+    }[topicType] || ' (Study Material)';
+
+    const partialResult = {
+      title: `${category} - ${topicLabel}${typeSuffix} #${index}`,
+      category, subcategory: topicLabel, difficulty,
+      theory: theoryText, formulas, solvedExamples, mcqs, syllabusMap, deepDive, memoryTricks, commonMistakes, prevYearQuestions,
+      topicsCovered: [topicLabel]
+    };
+
+    currentStage = "11/12 QA Audit";
+    console.log(`[${team.name}] Running Stage 11: Auditor...`);
+    const auditReport = await stageAuditor(team, partialResult);
+
+    currentStage = "12/12 Diagram Design";
+    console.log(`[${team.name}] Running Stage 12: Diagram Design...`);
+    const diagramDescription = await stageDiagram(team, partialResult);
+
+    const result = {
+      ...partialResult,
+      auditReport,
+      diagramDescription,
+      suggestedPrice: difficulty === 'Easy' ? 5 : difficulty === 'Hard' ? 15 : 9,
+      pages: Math.max(25, 18 + Math.floor((theoryText.length * 1.5 + mcqs.length * 400 + solvedExamples.length * 600 + prevYearQuestions.length * 600) / 1000)),
+      approved: false,
+      batchId: contentEngine.startedAt.getTime().toString()
+    };
+
+    console.log(`[Pipeline #${index}] Complete — all 12 stages done`);
+    return result;
+
+  } catch (err) {
+    console.error(`[Pipeline #${index}] [${team.name}] FAILED at Stage ${currentStage}: ${err.message}`);
+    const { category: cat, subcategory: sub } = contentEngine.currentTopic || {};
+    return {
+      isError: true,
+      debugInfo: { team: team.name, stage: currentStage, timestamp: new Date().toISOString(), index },
+      title: `${cat || 'Exam'} - ${sub || 'Topic'} (FAILED: ${currentStage})`,
+      category: cat || 'Unknown', subcategory: sub || 'Unknown', difficulty,
+      theory: `Pipeline generation failed at stage [${currentStage}] on [${team.name}]: ${err.message}`,
+      formulas: [], solvedExamples: [], mcqs: [], syllabusMap: '', deepDive: '', memoryTricks: '', commonMistakes: '', prevYearQuestions: [],
+      topicsCovered: [], topicComplete: false, suggestedPrice: 9, pages: 1, approved: false
+    };
+  }
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// STAGE 10 — PREVIOUS YEAR QUESTIONS
-// Goal: 5 past-exam-style questions with model answers
+// STAGE HANDLERS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 async function stagePrevYearQuestions(team, category, topicLabel) {
-  const prompt =
-    `You are an expert ${category} exam historian with access to past papers.
+  const isHighComplexity = ['JEE', 'NEET', 'GATE', 'UPSC', 'IIT'].includes(category.toUpperCase());
+  const count = isHighComplexity ? 20 : 10;
+  const prompt = `Generate ${count} past-exam-style questions for ${category} on "${topicLabel}". Format: PYQ X: [Q] \n ANSWER: [A] \n MARKS: [M] \n ---`;
+  return await callAIWithRetry(team, prompt);
+}
 
-Generate 8 high-fidelity previous-year-style questions on "${topicLabel}".
-Each question should mirror the style, complexity, and format of real ${category} past papers.
+async function stageAuditor(team, result) {
+  const prompt = `Review this ${result.category} content for ${result.subcategory}. Accuracy & Depth check. Suggest 3 improvements.`;
+  return await callAIWithRetry(team, prompt);
+}
 
-OUTPUT — use this EXACT format:
-
-PYQ 1: [question text with specific numbers]
-ANSWER: [comprehensive model answer with all logical steps]
-MARKS: [typical marks, e.g. 4 marks]
----
-
-CRITICAL RULES:
-- Generate EXACTLY 8 Questions.
-- Use UNICODE SYMBOLS ONLY. NO LaTeX.
-- Make questions feel authentic to the ${category} exam standard.
-- Start with "PYQ 1:".`;
+async function stageDiagram(team, result) {
+  const prompt = `Generate a detailed Scientific Diagram description or ASCII structural art for ${result.subcategory}.`;
   return await callAIWithRetry(team, prompt);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// ASSEMBLY PARSERS — Pure code, zero AI, zero JSON risk
+// PARSERS
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function parseFormulas(text) {
   if (!text) return [];
-  return text
-    .split('\n')
-    .map(line => line.replace(/^\d+[\.\):\-]\s*/, '').trim())
-    .filter(line => line.length > 4 && (line.includes(':') || line.includes('=') || line.includes('(')));
+  return text.split('\n').map(l => l.trim()).filter(l => l.includes('=') || l.includes(':'));
 }
 
 function parseSolvedExamples(text) {
@@ -1163,12 +1337,7 @@ function parseSolvedExamples(text) {
   for (const block of blocks) {
     const probMatch = block.match(/PROBLEM\s*\d+:\s*([\s\S]*?)(?=SOLUTION:)/i);
     const solMatch = block.match(/SOLUTION:\s*([\s\S]*)/i);
-    if (probMatch && solMatch) {
-      examples.push({
-        question: probMatch[1].trim(),
-        solution: solMatch[1].trim()
-      });
-    }
+    if (probMatch && solMatch) examples.push({ question: probMatch[1].trim(), solution: solMatch[1].trim() });
   }
   return examples;
 }
@@ -1179,22 +1348,13 @@ function parseMCQs(text) {
   const blocks = text.split(/---+/).map(b => b.trim()).filter(Boolean);
   for (const block of blocks) {
     const qMatch = block.match(/Q\d+:\s*([\s\S]*?)(?=\nA\))/i);
-    const aMatch = block.match(/^A\)\s*(.+)/im);
-    const bMatch = block.match(/^B\)\s*(.+)/im);
-    const cMatch = block.match(/^C\)\s*(.+)/im);
-    const dMatch = block.match(/^D\)\s*(.+)/im);
+    const options = block.match(/^[A-D]\)\s*(.*)/gm);
     const ansMatch = block.match(/ANSWER:\s*([A-D])/i);
-    const expMatch = block.match(/EXPLANATION:\s*([\s\S]*?)(?=---|$)/i);
-
+    const expMatch = block.match(/EXPLANATION:\s*([\s\S]*)/i);
     if (qMatch && ansMatch) {
       mcqs.push({
         q: qMatch[1].trim(),
-        options: [
-          `A) ${aMatch ? aMatch[1].trim() : 'Option A'}`,
-          `B) ${bMatch ? bMatch[1].trim() : 'Option B'}`,
-          `C) ${cMatch ? cMatch[1].trim() : 'Option C'}`,
-          `D) ${dMatch ? dMatch[1].trim() : 'Option D'}`
-        ],
+        options: options || ['A) Option A', 'B) Option B', 'C) Option C', 'D) Option D'],
         answer: ansMatch[1].trim(),
         explanation: expMatch ? expMatch[1].trim() : ''
       });
@@ -1203,140 +1363,17 @@ function parseMCQs(text) {
   return mcqs;
 }
 
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// TEAM PIPELINE — one team's full 10-stage run, isolated to its own providers
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-async function runTeamPipeline(team, index) {
-  const { category, subcategory, topicType } = contentEngine.currentTopic;
-  const topicLabel = subcategory || `All ${category} topics`;
-  const difficulties = ['Easy', 'Medium', 'Hard'];
-  const difficulty = difficulties[index % 3];
-
-  // Add random jitter (0-5s) to avoid teams starting stages at the exact same millisecond
-  await new Promise(r => setTimeout(r, Math.random() * 5000));
-
-  console.log(`[Pipeline #${index}] [${team.name}] ${category} > ${topicLabel} | ${difficulty}`);
-  let currentStage = "Starting";
-
-  try {
-    currentStage = "1/10 Research";
-    console.log(`[${team.name}] Stage ${currentStage}...`);
-    const researchText = await stageResearch(team, category, topicLabel);
-    console.log(`[${team.name}] Stage 1 done (${researchText.length} chars)`);
-
-    currentStage = "2/10 Theory";
-    console.log(`[${team.name}] Stage ${currentStage}...`);
-    const theoryText = await stageTheory(team, category, topicLabel, researchText);
-    console.log(`[${team.name}] Stage 2 done (${theoryText.length} chars)`);
-
-
-    // Stage 3: Formulas
-    let formulas = [];
-    if (topicType !== 'questions') {
-      console.log(`[${team.name}] Stage 3/10: Formulas...`);
-      const formulasText = await stageFormulas(team, category, topicLabel);
-      formulas = parseFormulas(formulasText);
-      console.log(`[${team.name}] Stage 3 done (${formulas.length} formulas)`);
-    } else {
-      console.log(`[${team.name}] Stage 3/10: Formulas skipped (question-only mode)`);
-    }
-
-    // Stage 4: Solved Examples
-    console.log(`[${team.name}] Stage 4/10: Solved Examples...`);
-    const examplesText = await stageSolvedExamples(team, category, topicLabel);
-    const solvedExamples = parseSolvedExamples(examplesText);
-    console.log(`[${team.name}] Stage 4 done (${solvedExamples.length} examples)`);
-
-    // Stage 5: MCQs
-    console.log(`[${team.name}] Stage 5/10: MCQs...`);
-    const mcqsText = await stageMCQs(team, category, topicLabel);
-    const mcqs = parseMCQs(mcqsText);
-    console.log(`[${team.name}] Stage 5 done (${mcqs.length} MCQs)`);
-
-    // Stage 6: Syllabus Map
-    console.log(`[${team.name}] Stage 6/10: Syllabus Map...`);
-    const syllabusMap = await stageSyllabusMap(team, category, topicLabel);
-    console.log(`[${team.name}] Stage 6 done (${syllabusMap.length} chars)`);
-
-    // Stage 7: Deep Dive
-    console.log(`[${team.name}] Stage 7/10: Deep Dive...`);
-    const deepDive = await stageDeepDive(team, category, topicLabel, theoryText);
-    console.log(`[${team.name}] Stage 7 done (${deepDive.length} chars)`);
-
-    // Stage 8: Memory Tricks
-    console.log(`[${team.name}] Stage 8/10: Memory Tricks...`);
-    const memoryTricks = await stageMemoryTricks(team, category, topicLabel);
-    console.log(`[${team.name}] Stage 8 done (${memoryTricks.length} chars)`);
-
-    // Stage 9: Common Mistakes
-    console.log(`[${team.name}] Stage 9/10: Common Mistakes...`);
-    const commonMistakes = await stageCommonMistakes(team, category, topicLabel);
-    console.log(`[${team.name}] Stage 9 done (${commonMistakes.length} chars)`);
-
-    // Stage 10: Previous Year Questions
-    console.log(`[${team.name}] Stage 10/10: Previous Year Questions...`);
-    const prevYearQuestions = await stagePrevYearQuestions(team, category, topicLabel);
-    console.log(`[${team.name}] Stage 10 done (${prevYearQuestions.length} chars)`);
-
-    const result = {
-      title: `${category} - ${topicLabel}: Master Class Sheet ${index}`,
-      category,
-      subcategory: topicLabel,
-      difficulty,
-      theory: theoryText,
-      formulas,
-      solvedExamples,
-      mcqs,
-      syllabusMap,
-      deepDive,
-      memoryTricks,
-      commonMistakes,
-      prevYearQuestions,
-      topicsCovered: [topicLabel],
-      topicComplete: false,
-      references: [`Official ${category} Prep Guide`, 'ScholarStock AI Content Engine'],
-      suggestedPrice: difficulty === 'Easy' ? 5 : difficulty === 'Hard' ? 15 : 9,
-      pages: 12,
-      approved: false,
-      fileUrl: null
-    };
-
-    console.log(`[Pipeline #${index}] Complete — all 10 stages done`);
-    return result;
-
-  } catch (err) {
-    console.error(`[Pipeline #${index}] [${team.name}] FAILED at Stage ${currentStage}: ${err.message}`);
-    const { category: cat, subcategory: sub } = contentEngine.currentTopic || {};
-    return {
-      isError: true,
-      debugInfo: {
-        team: team.name,
-        stage: currentStage,
-        timestamp: new Date().toISOString(),
-        index
-      },
-      title: `${cat || 'Exam'} - ${sub || 'Topic'} (FAILED: ${currentStage})`,
-      category: cat || 'Unknown',
-      subcategory: sub || 'Unknown',
-      difficulty,
-      theory: `Pipeline generation failed at stage [${currentStage}] on [${team.name}]: ${err.message}`,
-      formulas: [],
-      solvedExamples: [],
-      mcqs: [],
-      syllabusMap: '',
-      deepDive: '',
-      memoryTricks: '',
-      commonMistakes: '',
-      prevYearQuestions: '',
-      topicsCovered: [],
-      topicComplete: false,
-      suggestedPrice: 9,
-      pages: 1,
-      approved: false,
-      fileUrl: null
-    };
+function parsePYQs(text) {
+  if (!text) return [];
+  const pyqs = [];
+  const blocks = text.split(/---+/).map(b => b.trim()).filter(Boolean);
+  for (const block of blocks) {
+    const qMatch = block.match(/PYQ\s*\d+:\s*([\s\S]*?)(?=ANSWER:)/i);
+    const ansMatch = block.match(/ANSWER:\s*([\s\S]*?)(?=MARKS:|$)/i);
+    const marksMatch = block.match(/MARKS:\s*(.*)/i);
+    if (qMatch && ansMatch) pyqs.push({ question: qMatch[1].trim(), answer: ansMatch[1].trim(), marks: marksMatch ? marksMatch[0].trim() : 'N/A' });
   }
+  return pyqs;
 }
 
 module.exports = router;
