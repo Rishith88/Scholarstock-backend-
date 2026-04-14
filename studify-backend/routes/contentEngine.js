@@ -530,26 +530,29 @@ function renderPdfContent(doc, item) {
     doc.fontSize(14).fillColor('#60a5fa').font(boldFont).text('PRACTICE QUESTIONS (MCQs)', L, doc.y);
     doc.moveDown(1);
     item.mcqs.forEach((mcq, i) => {
-      if (doc.y > H - 140) newPage('Practice MCQs');
+      if (doc.y > H - 150) newPage('Practice MCQs');
       doc.fontSize(10.5).fillColor('#1e293b').font(boldFont)
         .text(`Q${i + 1}. `, L, doc.y, { continued: true })
         .font(bodyFont).text(mcq.q, { width: CW });
-      doc.moveDown(0.4);
-      const optY = doc.y;
-      mcq.options.forEach((opt, idx) => {
-        const xPos = idx % 2 === 0 ? L + 10 : W / 2 + 10;
-        const yPos = optY + Math.floor(idx / 2) * 18;
-        doc.fontSize(9.5).fillColor('#475569').font(bodyFont).text(opt, xPos, yPos, { width: CW / 2 - 20 });
+      doc.moveDown(0.5);
+      
+      mcq.options.forEach((opt) => {
+        if (doc.y > H - 60) newPage('Practice MCQs');
+        doc.fontSize(9.5).fillColor('#475569').font(bodyFont).text(opt, L + 15, doc.y, { width: CW - 25 });
+        doc.moveDown(0.2);
       });
-      doc.y = optY + Math.ceil(mcq.options.length / 2) * 18 + 6;
+      
+      doc.moveDown(0.3);
+      if (doc.y > H - 60) newPage('Practice MCQs');
       doc.fontSize(9.5).fillColor('#059669').font(boldFont)
-        .text('Answer: ', L + 10, doc.y, { continued: true })
+        .text('Answer: ', L + 15, doc.y, { continued: true })
         .font(bodyFont).text(mcq.answer);
+      
       if (mcq.explanation) {
         doc.fontSize(9).fillColor('#64748b').font(bodyFont)
-          .text(`Explanation: ${mcq.explanation}`, L + 10, doc.y, { width: CW - 10 });
+          .text(`Explanation: ${mcq.explanation}`, L + 15, doc.y, { width: CW - 25 });
       }
-      doc.moveDown(1.2);
+      doc.moveDown(1.5);
     });
   }
 
@@ -900,15 +903,17 @@ async function callAIWithRetry(team, prompt, maxRetries = 8) {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function stageResearch(team, category, topicLabel) {
   const prompt =
-    `You are a world-class exam content researcher for the ${category} exam.
+    `You are a Senior Academic Researcher specializing in the ${category} exam curriculum.
+    
+Your goal is to provide ELITE-LEVEL research data for the topic: "${topicLabel}".
 
-List the 10 most important concepts, subtopics, and key facts about "${topicLabel}" that appear in the ${category} exam.
+List the 10 most critical concepts, hidden nuances, and high-yield facts that distinguish top-tier ${category} candidates.
 
 OUTPUT RULES:
-- Numbered list only. One concept per line.
-- Plain text. No JSON. No markdown. No LaTeX backslashes.
-- Use Unicode symbols if helpful (θ, π, ², √, ∞, Σ, Δ).
-- Be specific to the ${category} syllabus.
+- Numbered list only. One breakthrough concept per line.
+- Plain text. No JSON. No markdown. NO LaTeX.
+- Use Unicode symbols for formulas/math (θ, π, ², √, ∞, Σ, Δ).
+- Focus on concepts that actually appear in the most recent ${category} papers.
 
 1. `;
   return await callAIWithRetry(team, prompt);
@@ -920,18 +925,19 @@ OUTPUT RULES:
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function stageTheory(team, category, topicLabel, researchPoints) {
   const prompt =
-    `You are an expert textbook author writing premium study material for the ${category} exam.
+    `You are a Lead Educator writing a master-class textbook for the ${category} exam.
+    
+Write a sophisticated, in-depth conceptual theory for "${topicLabel}".
 
-Key research points for "${topicLabel}":
+Key points to integrate:
 ${researchPoints}
 
-Write a clear, in-depth conceptual explanation of "${topicLabel}" for ${category} students.
-
 OUTPUT RULES:
-- Exactly 3 well-structured paragraphs of flowing prose.
-- Plain text only. No bullet points. No headings. No JSON. No LaTeX backslashes.
-- Use Unicode symbols where needed (θ, π, ², √, Σ, Δ, ±, ≤, ≥, ≈).
-- Begin directly with the explanation. No preamble like "Here is the theory:".`;
+- 3 dense, academic paragraphs of flowing prose.
+- Maximize technical accuracy. Use high-level vocabulary appropriate for ${category}.
+- Plain text only. No bullets/headings. NO LaTeX.
+- Use Unicode (θ, π, ², √, Σ, Δ, ±, ≤, ≥, ≈).
+- START DIRECTLY with the explanation. NO preambles.`;
   return await callAIWithRetry(team, prompt);
 }
 
@@ -966,25 +972,26 @@ CRITICAL RULES:
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function stageSolvedExamples(team, category, topicLabel) {
   const prompt =
-    `You are an expert ${category} exam tutor.
+    `You are a ${category} specialized tutor.
 
-Create 3 original, detailed step-by-step solved problems about "${topicLabel}" for the ${category} exam.
+Create 3 master-level step-by-step solved problems about "${topicLabel}".
+One must be 'Easy' (foundational), one 'Medium' (application), and one 'Hard' (analytical/trap).
 
-OUTPUT — use this EXACT format with no deviations:
+OUTPUT FORMAT:
 
-PROBLEM 1: [state the problem clearly with specific numbers]
-SOLUTION: [step-by-step solution, explain every step]
+PROBLEM 1: [foundational question]
+SOLUTION: [step-by-step logic]
 ---
-PROBLEM 2: [state the problem]
-SOLUTION: [step-by-step solution]
+PROBLEM 2: [application question]
+SOLUTION: [step-by-step logic]
 ---
-PROBLEM 3: [state the problem]
-SOLUTION: [step-by-step solution]
+PROBLEM 3: [complex analytical question]
+SOLUTION: [step-by-step logic]
 
 CRITICAL RULES:
-- Use UNICODE SYMBOLS ONLY (θ, π, ², √). NO LaTeX backslashes.
-- Change all numbers from standard textbook problems to make them original.
-- Plain text only. No JSON. No markdown. Start with "PROBLEM 1:".`;
+- Use UNICODE math symbols ONLY. NO LaTeX \\ backslashes.
+- Numbers must be unique and non-standard.
+- Start with "PROBLEM 1:".`;
   return await callAIWithRetry(team, prompt);
 }
 
@@ -994,11 +1001,12 @@ CRITICAL RULES:
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function stageMCQs(team, category, topicLabel) {
   const prompt =
-    `You are an expert ${category} exam question setter.
+    `You are a Senior Question Setter for the ${category} examination board.
+    
+Generate 8 high-quality MCQs for "${topicLabel}".
+Difficulty: 2 Easy, 4 Medium, 2 Elite (Complex).
 
-Generate 8 original MCQ practice questions about "${topicLabel}" for the ${category} exam.
-
-OUTPUT — use this EXACT format for EVERY question:
+FORMAT FOR EVERY QUESTION:
 
 Q1: [question text]
 A) [option]
@@ -1006,22 +1014,13 @@ B) [option]
 C) [option]
 D) [option]
 ANSWER: [A or B or C or D]
-EXPLANATION: [concise explanation of why the answer is correct]
----
-Q2: [question text]
-A) [option]
-B) [option]
-C) [option]
-D) [option]
-ANSWER: [A or B or C or D]
-EXPLANATION: [explanation]
+EXPLANATION: [deep dive into why this answer is correct and why others are traps]
 ---
 
-CRITICAL RULES:
-- Use UNICODE SYMBOLS ONLY. NO LaTeX backslashes.
-- Vary difficulty: 3 Easy, 3 Medium, 2 Hard.
-- Each question must be clearly distinct and original.
-- Plain text only. No JSON. No markdown. Start with "Q1:".`;
+RULES:
+- UNICODE SYMBOLS ONLY. NO LaTeX.
+- Questions must be rigorous and test deep understanding, not just recall.
+- Start with "Q1:".`;
   return await callAIWithRetry(team, prompt);
 }
 
