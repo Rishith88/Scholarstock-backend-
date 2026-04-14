@@ -461,20 +461,26 @@ function renderPdfContent(doc, item) {
   // ══════════════════════════════════════════════
   // PAGE 1 — COVER
   // ══════════════════════════════════════════════
-  doc.rect(20, 20, W - 40, H - 40).strokeColor('#e2e8f0').lineWidth(0.5).stroke();
-  doc.rect(0, 0, W, 80).fill('#0f172a');
-  doc.fontSize(26).fillColor('#60a5fa').font(boldFont).text('ScholarStock', L, 25);
-  doc.fontSize(10).fillColor('#94a3b8').font(bodyFont).text('ULTIMATE PREP SERIES', L, 52);
-  doc.rect(W - 200, 25, 150, 30).fill('#1e293b');
-  doc.fontSize(11).fillColor('#ffffff').font(boldFont)
-    .text(`${item.category} EXAM`, W - 200, 34, { align: 'center', width: 150 });
+  doc.rect(20, 20, W - 40, H - 40).strokeColor('#f1f5f9').lineWidth(0.5).stroke();
+  doc.rect(0, 0, W, 100).fill('#0f172a');
+  
+  // Left: Brand
+  doc.fontSize(28).fillColor('#60a5fa').font(boldFont).text('ScholarStock', L, 28);
+  doc.fontSize(9).fillColor('#94a3b8').font(bodyFont).text('INTELLIGENT CONTENT ENGINE', L, 60);
 
-  doc.y = 110;
-  doc.fontSize(22).fillColor('#1e293b').font(boldFont).text(item.title, { align: 'center', width: CW + L });
-  doc.moveDown(0.4);
-  doc.fontSize(11).fillColor('#64748b').font(bodyFont)
-    .text(`Topic: ${item.subcategory}  |  Difficulty: ${item.difficulty || 'Medium'}`, { align: 'center', width: CW + L });
-  doc.moveDown(1.5);
+  // Center-Right: Exam Badge (Pill Style)
+  const badgeW = 180;
+  const badgeX = W - badgeW - 50;
+  doc.roundedRect(badgeX, 32, badgeW, 36, 18).fill('#1e293b');
+  doc.fontSize(12).fillColor('#ffffff').font(boldFont)
+    .text(`${item.category} EXAM`, badgeX, 43, { align: 'center', width: badgeW });
+
+  doc.y = 140;
+  doc.fontSize(24).fillColor('#1e293b').font(boldFont).text(item.title, { align: 'center', width: CW + L });
+  doc.moveDown(0.5);
+  doc.fontSize(12).fillColor('#64748b').font(bodyFont)
+    .text(`Topic: ${item.subcategory}   •   Difficulty: ${item.difficulty || 'Medium'}`, { align: 'center', width: CW + L });
+  doc.moveDown(2);
   doc.moveTo(L, doc.y).lineTo(R, doc.y).strokeColor('#3b82f6').lineWidth(2).stroke();
   doc.moveDown(1.5);
 
@@ -593,6 +599,11 @@ function renderPdfContent(doc, item) {
   const range = doc.bufferedPageRange();
   for (let i = range.start; i < range.start + range.count; i++) {
     doc.switchToPage(i);
+    
+    // Check if this is a truly empty page (happens occasionally with auto-pagination)
+    // If it's a blank page after the content, we don't want to watermark it (or we might want to delete it)
+    // For now, let's just ensure we draw the border and footer correctly
+    
     doc.save();
     doc.opacity(0.04);
     doc.fontSize(55).fillColor('#3b82f6').font(boldFont);
@@ -605,6 +616,10 @@ function renderPdfContent(doc, item) {
       }
     }
     doc.restore();
+    
+    // Re-ensure Border on every page in case auto-pagination missed it
+    doc.rect(20, 20, W - 40, H - 40).strokeColor('#f1f5f9').lineWidth(0.5).stroke();
+
     // Footer
     const footerY = H - 38;
     doc.rect(0, footerY - 8, W, 46).fill('#0f172a');
