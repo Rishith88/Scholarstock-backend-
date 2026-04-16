@@ -287,4 +287,22 @@ router.put('/categories', adminAuth, async (req, res) => {
   }
 });
 
+// PUT /api/admin/materials/:id/approve - Approve a material
+router.put('/materials/:id/approve', adminAuth, async (req, res) => {
+  try {
+    const material = await Material.findById(req.params.id);
+    if (!material) {
+      return res.status(404).json({ success: false, message: 'Material not found' });
+    }
+
+    material.isActive = true;
+    await material.save();
+
+    res.json({ success: true, message: 'Material approved and is now active' });
+  } catch (error) {
+    console.error('Approve material error:', error);
+    res.status(500).json({ success: false, message: 'Failed to approve material' });
+  }
+});
+
 module.exports = router;
