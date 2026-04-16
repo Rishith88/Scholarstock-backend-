@@ -13,26 +13,57 @@ const { createClient } = require('@supabase/supabase-js');
 // Combined middleware for cleaner admin routes
 const adminAuth = [verifyToken, verifyAdmin];
 
-// Supabase client
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY
-);
-const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET || 'materials';
+// ── Environment and Supabase Initialization ──
+const getEnv = (key) => {
+  const val = process.env[key];
+  if (!val || val === 'undefined') return '';
+  return val.replace(/['"]/g, '').trim();
+};
 
-// Auto-create bucket if it doesn't exist
-(async () => {
+let supabase = null;
+const supabaseUrl = getEnv('SUPABASE_URL');
+const supabaseKey = getEnv('SUPABASE_SERVICE_KEY') || getEnv('SUPABASE_ANON_KEY');
+const SUPABASE_BUCKET = getEnv('SUPABASE_BUCKET') || 'materials';
+
+if (supabaseUrl && supabaseKey) {
   try {
-    const { data: buckets } = await supabase.storage.listBuckets();
-    const exists = buckets && buckets.find(b => b.name === SUPABASE_BUCKET);
-    if (!exists) {
-      await supabase.storage.createBucket(SUPABASE_BUCKET, { public: true });
-      console.log(`✅ Supabase bucket '${SUPABASE_BUCKET}' created`);
-    }
+    supabase = createClient(supabaseUrl, supabaseKey);
+    console.log('✅ [Admin] Supabase client initialized.');
+
+    // Auto-create bucket if it doesn't exist
+    (async () => {
+      try {
+        const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+        
+        if (listError) {
+          throw new Error(`Supabase listBuckets failed: ${listError.message}`);
+        }
+
+        const exists = buckets && buckets.find(b => b.name === SUPABASE_BUCKET);
+        if (!exists) {
+          console.log(`[Admin] Bucket '${SUPABASE_BUCKET}' not found. Attempting to create...`);
+          const { error: createError } = await supabase.storage.createBucket(SUPABASE_BUCKET, { public: true });
+          
+          if (createError) {
+            throw new Error(`Supabase createBucket failed: ${createError.message}`);
+          }
+          console.log(`✅ Supabase bucket '${SUPABASE_BUCKET}' created.`);
+        } else {
+          console.log(`[Admin] Supabase bucket '${SUPABASE_BUCKET}' is available.`);
+        }
+      } catch (e) {
+        console.error('⚠️ [Admin] CRITICAL: Supabase bucket initialization failed:', e.message);
+        console.error('⚠️ [Admin] This is likely due to invalid SUPABASE_URL or SUPABASE_SERVICE_KEY. File uploads and publishing WILL FAIL.');
+      }
+    })();
   } catch (e) {
-    console.log('Supabase bucket check:', e.message);
+    console.error('⚠️ [Admin] CRITICAL: createClient failed. This is likely due to an invalid URL format.', e.message);
   }
-})();
+} else {
+  console.warn('⚠️ [Admin] SUPABASE_URL or SUPABASE_SERVICE_KEY environment variables are missing.');
+  console.warn('⚠️ [Admin] All file uploads and publishing features will be disabled.');
+}
+
 
 // Multer memory storage (buffer → Supabase)
 const upload = multer({
@@ -48,7 +79,6 @@ const upload = multer({
 router.post('/verify-vault', (req, res) => {
   try {
     const { vaultCode } = req.body;
-    // Check both ADMIN_VAULT_CODE and VAULT_CODE for compatibility with Render environment
     const envVaultCode = process.env.VAULT_CODE || process.env.ADMIN_VAULT_CODE || 'ADMIN2026';
     
     if (vaultCode && vaultCode.toUpperCase() === envVaultCode.toUpperCase()) {
@@ -102,14 +132,12 @@ router.get('/stats', adminAuth, async (req, res) => {
     const totalMaterials = await Material.countDocuments();
     const activeRentals = await Rental.countDocuments({ status: 'active' });
     
-    // Calculate total revenue from rentals
     const revenueData = await Rental.aggregate([
       { $match: { status: { $in: ['active', 'completed'] } } },
       { $group: { _id: null, total: { $sum: '$pricePaid' } } }
     ]);
     const totalRevenue = revenueData.length > 0 ? revenueData[0].total : 0;
 
-    // Today's stats
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
@@ -182,13 +210,16 @@ router.get('/materials', adminAuth, async (req, res) => {
 // POST /api/admin/materials - Create a new material with PDF
 router.post('/materials', adminAuth, upload.single('pdf'), async (req, res) => {
   try {
+    if (!supabase) {
+      return res.status(500).json({ success: false, message: 'Supabase client is not initialized. Check server configuration and logs.' });
+    }
+
     const { title, category, subcategory, price, description, author } = req.body;
     
     if (!req.file) {
       return res.status(400).json({ success: false, message: 'PDF file is required' });
     }
 
-    // Upload buffer to Supabase Storage
     const filename = `pdfs/${Date.now()}-${Math.round(Math.random() * 1e9)}.pdf`;
     const { error: uploadError } = await supabase.storage
       .from(SUPABASE_BUCKET)
@@ -229,7 +260,6 @@ router.delete('/materials/:id', adminAuth, async (req, res) => {
     const material = await Material.findById(req.params.id);
     if (!material) return res.status(404).json({ success: false, message: 'Material not found' });
 
-    // Delete local file if it exists
     if (material.pdfUrl && !material.pdfUrl.startsWith('http')) {
       const filePath = path.join(__dirname, '..', material.pdfUrl);
       if (fs.existsSync(filePath)) {
@@ -255,7 +285,6 @@ router.get('/rentals', adminAuth, async (req, res) => {
       .limit(parseInt(limit))
       .skip(parseInt(skip));
     
-    // Map for frontend compatibility
     const formattedRentals = rentals.map(r => ({
       ...r.toObject(),
       user: r.userId,
