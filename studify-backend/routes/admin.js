@@ -305,4 +305,15 @@ router.put('/materials/:id/approve', adminAuth, async (req, res) => {
   }
 });
 
+// PUT /api/admin/materials/approve-all - Approve all pending materials
+router.put('/materials/approve-all', adminAuth, async (req, res) => {
+  try {
+    await Material.updateMany({ isActive: false }, { $set: { isActive: true } });
+    res.json({ success: true, message: 'All pending materials have been approved.' });
+  } catch (error) {
+    console.error('Approve all materials error:', error);
+    res.status(500).json({ success: false, message: 'Failed to approve all materials' });
+  }
+});
+
 module.exports = router;
