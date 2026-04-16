@@ -154,9 +154,9 @@ class AITeam {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamAlpha = new AITeam('Alpha ⚡', [
   makeProvider('α-github-gpt-4o', 'github', GH, getEnv('GITHUB_TOKEN'), 'gpt-4o', 50, 'tier1'),
-  makeProvider('α-openrouter-deepseek-v2', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-v2', 1000, 'tier1'),
-  makeProvider('α-openrouter-llama3.1-405b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'meta-llama/llama-3.1-405b-instruct', 1000, 'tier1'),
-  makeProvider('α-gemini-1.5-flash', 'gemini', GEM, getEnv('GEMINI_API_KEY'), 'gemini-1.5-flash-latest', 250, 'tier1'),
+  makeProvider('α-openrouter-gemma-2-9b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'google/gemma-2-9b-it', 1000, 'tier1'),
+  makeCFProvider('α-cf-llama3-8b', '@cf/meta/llama-3-8b-instruct', 200, 'tier1'),
+  makeCFProvider('α-cf-mistral-7b', '@cf/mistral/mistral-7b-instruct-v0.1', 200, 'tier1'),
   makeProvider('α-openrouter-phi4', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'microsoft/phi-4', 1000, 'tier1'),
   makeCFProvider('α-cf-llama3.3-70b', '@cf/meta/llama-3.3-70b-instruct-fp8-fast', 200, 'tier1'),
 ]);
@@ -180,11 +180,11 @@ teamBeta.role = 'Mass MCQ & Application Specialist';
 // TEAM GAMMA 🔥 — Diversity: Foundation & Notes Specialist (Gemini + Qwen + Llama)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamGamma = new AITeam('Gamma 🔥', [
+  makeProvider('γ-gemini-1.5-flash', 'gemini', GEM, getEnv('GEMINI_API_KEY'), 'gemini-1.5-flash-latest', 250, 'tier1'),
   makeProvider('γ-cerebras-llama3.1-70b', 'cerebras', CER, getEnv('CEREBRAS_API_KEY'), 'llama3.1-70b', 1000, 'tier1'),
-  makeProvider('γ-deepseek-chat', 'deepseek', DSK, getEnv('DEEPSEEK_API_KEY'), 'deepseek-chat', 1000, 'tier1'),
   makeProvider('γ-mistral-small', 'mistral', MST, getEnv('MISTRAL_API_KEY'), 'mistral-small-latest', 100, 'tier1'),
-  makeProvider('γ-or-qwen2.5-72b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'qwen/qwen-2.5-72b-instruct', 1000, 'tier1'),
-  makeProvider('γ-or-gemma2-27b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'google/gemma-2-27b-it', 1000, 'tier1'),
+  makeCFProvider('γ-cf-llama3-8b-instruct', '@cf/meta/llama-3-8b-instruct', 200, 'tier1'),
+  makeCFProvider('γ-cf-mistral-7b-v0.1', '@cf/mistral/mistral-7b-instruct-v0.1', 200, 'tier1'),
   makeCFProvider('γ-cf-mistral-7b', '@cf/mistral/mistral-7b-instruct-v0.2-lora', 200, 'tier1'),
   makeProvider('γ-fireworks-llama70b', 'fireworks', FW, getEnv('FIREWORKS_API_KEY'), 'accounts/fireworks/models/llama-v3p1-70b-instruct', 100, 'tier2'),
   makeProvider('γ-groq-llama3.1-8b', 'groq', GRQ, getEnv('GROQ_API_KEY'), 'llama-3.1-8b-instant', 500, 'tier2'),
@@ -1239,7 +1239,7 @@ RULES:
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // STAGE 9 — COMMON MISTAKES
 // Goal: Top errors students make and how to avoid them
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 async function stageCommonMistakes(team, category, topicLabel) {
   const prompt =
     `You are an expert ${category} exam examiner who has graded thousands of papers.
