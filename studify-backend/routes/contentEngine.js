@@ -12,7 +12,7 @@ const DraftMaterial = require('../models/DraftMaterial');
 const getEnv = (key) => {
   const val = process.env[key];
   if (!val || val === 'undefined') return '';
-  return val.replace(/['"]/g, '').trim();
+  return val.replace(/[\'"]/g, '').trim();
 };
 
 // ── Auto-download DejaVu Sans (full Unicode support) on first run ──
@@ -154,9 +154,9 @@ class AITeam {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamAlpha = new AITeam('Alpha ⚡', [
   makeProvider('α-github-gpt-4o', 'github', GH, getEnv('GITHUB_TOKEN'), 'gpt-4o', 50, 'tier1'),
-  makeProvider('α-openrouter-deepseek-r1-distill', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-r1-distill-llama-70b', 1000, 'tier1'),
+  makeProvider('α-openrouter-deepseek-v2', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-v2', 1000, 'tier1'),
   makeProvider('α-openrouter-llama3.1-405b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'meta-llama/llama-3.1-405b-instruct', 1000, 'tier1'),
-  makeProvider('α-gemini-2.0-flash', 'gemini', GEM, getEnv('GEMINI_API_KEY'), 'gemini-2.0-flash', 250, 'tier1'),
+  makeProvider('α-gemini-1.5-flash', 'gemini', GEM, getEnv('GEMINI_API_KEY'), 'gemini-1.5-flash-latest', 250, 'tier1'),
   makeProvider('α-openrouter-phi4', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'microsoft/phi-4', 1000, 'tier1'),
   makeCFProvider('α-cf-llama3.3-70b', '@cf/meta/llama-3.3-70b-instruct-fp8-fast', 200, 'tier1'),
 ]);
@@ -168,7 +168,7 @@ teamAlpha.role = 'Advanced Theory Specialist';
 const teamBeta = new AITeam('Beta 🧠', [
   makeProvider('β-groq-llama3.3-70b', 'groq', GRQ, getEnv('GROQ_API_KEY'), 'llama-3.3-70b-versatile', 500, 'tier1'),
   makeProvider('β-cerebras-llama3.1-8b', 'cerebras', CER, getEnv('CEREBRAS_API_KEY'), 'llama3.1-8b', 1000, 'tier1'),
-  makeProvider('β-openrouter-deepseek-v3', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-chat', 1000, 'tier1'),
+  makeProvider('β-openrouter-deepseek-chat', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'deepseek/deepseek-chat', 1000, 'tier1'),
   makeProvider('β-github-gpt-4o-mini', 'github', GH, getEnv('GITHUB_TOKEN'), 'gpt-4o-mini', 50, 'tier1'),
   makeProvider('β-mistral-large', 'mistral', MST, getEnv('MISTRAL_API_KEY'), 'mistral-large-latest', 100, 'tier1'),
   makeProvider('β-openrouter-mistral-7b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'mistralai/mistral-7b-instruct', 1000, 'tier2'),
@@ -181,7 +181,7 @@ teamBeta.role = 'Mass MCQ & Application Specialist';
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamGamma = new AITeam('Gamma 🔥', [
   makeProvider('γ-cerebras-llama3.1-70b', 'cerebras', CER, getEnv('CEREBRAS_API_KEY'), 'llama3.1-70b', 1000, 'tier1'),
-  makeProvider('γ-github-deepseek-v3', 'github', GH, getEnv('GITHUB_TOKEN'), 'deepseek-v3', 150, 'tier1'),
+  makeProvider('γ-deepseek-chat', 'deepseek', DSK, getEnv('DEEPSEEK_API_KEY'), 'deepseek-chat', 1000, 'tier1'),
   makeProvider('γ-mistral-small', 'mistral', MST, getEnv('MISTRAL_API_KEY'), 'mistral-small-latest', 100, 'tier1'),
   makeProvider('γ-or-qwen2.5-72b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'qwen/qwen-2.5-72b-instruct', 1000, 'tier1'),
   makeProvider('γ-or-gemma2-27b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'google/gemma-2-27b-it', 1000, 'tier1'),
@@ -810,12 +810,12 @@ async function startCollection() {
       // All 3 teams run their full 10-stage pipeline with staggered starts to avoid rate limiting
       const resultA = await runTeamPipeline(teamAlpha, batchIndex + 1);
       
-      console.log(`[Engine] Staggering team Beta start (4s)...`);
-      await new Promise(r => setTimeout(r, 4000));
+      console.log(`[Engine] Staggering team Beta start (1s)...`);
+      await new Promise(r => setTimeout(r, 1000));
       const resultB = await runTeamPipeline(teamBeta, batchIndex + 2);
       
-      console.log(`[Engine] Staggering team Gamma start (4s)...`);
-      await new Promise(r => setTimeout(r, 4000));
+      console.log(`[Engine] Staggering team Gamma start (1s)...`);
+      await new Promise(r => setTimeout(r, 1000));
       const resultC = await runTeamPipeline(teamGamma, batchIndex + 3);
 
       // Collect all 3 results
@@ -872,7 +872,7 @@ async function startCollection() {
     }
 
     // Brief pause between cycles to respect rate limits
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, 1000));
   }
 
   if (contentEngine.running && !contentEngine.paused) {
@@ -923,13 +923,21 @@ async function callAI(provider, prompt) {
     case 'fireworks':
     case 'groq':
     case 'mistral': {
-      response = await axios.post(provider.endpoint, {
-        model: provider.model,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 4096,
-        temperature: 0.7
-      }, { headers, timeout });
-      return response.data.choices[0].message.content || '';
+       try {
+        response = await axios.post(provider.endpoint, {
+            model: provider.model,
+            messages: [{ role: 'user', content: prompt }],
+            max_tokens: 4096,
+            temperature: 0.7
+        }, { headers, timeout });
+        return response.data.choices[0].message.content || '';
+       } catch (err) {
+        if (err.response?.status === 429) {
+            provider.usage++;
+            throw new Error(`${provider.type} rate limited, will try next provider`);
+        }
+        throw err;
+       }
     }
 
     case 'huggingface': {
@@ -941,12 +949,26 @@ async function callAI(provider, prompt) {
     }
 
     case 'gemini': {
-      response = await axios.post(
-        `${provider.endpoint}${provider.model}:generateContent?key=${provider.key}`,
-        { contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4096, temperature: 0.7 } },
-        { timeout }
-      );
-      return response.data.candidates[0].content.parts[0].text || '';
+      try {
+        response = await axios.post(
+            `${provider.endpoint}${provider.model}:generateContent?key=${provider.key}`,
+            { contents: [{ parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: 4096, temperature: 0.7 } },
+            { timeout }
+        );
+        if (!response.data.candidates || response.data.candidates.length === 0) {
+            throw new Error('Gemini returned no candidates. Content may have been blocked.');
+        }
+        return response.data.candidates[0].content.parts[0].text || '';
+      } catch (err) {
+        if (err.response?.status === 429) {
+            provider.usage++;
+            throw new Error('Gemini rate limited, will try next provider');
+        }
+        if (err.response?.data?.error?.message.includes('SAFETY')) {
+            throw new Error('Gemini safety filter triggered');
+        }
+        throw err;
+      }
     }
 
     case 'ai21': {
@@ -1240,8 +1262,6 @@ async function runTeamPipeline(team, index) {
   const topicLabel = subcategory || `All ${category} topics`;
   const difficulties = ['Easy', 'Medium', 'Hard'];
   const difficulty = difficulties[index % 3];
-
-  await new Promise(r => setTimeout(r, Math.random() * 5000));
 
   console.log(`[Pipeline #${index}] [${team.name}] Role: ${team.role} | ${difficulty}`);
   let currentStage = "Starting";
