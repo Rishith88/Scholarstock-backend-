@@ -103,7 +103,6 @@ function makeCFProvider(name, model, limit, quality) {
 }
 
 // ── Shared provider config shortcuts ──
-const OR = 'https://openrouter.ai/api/v1/chat/completions';
 const GRQ = 'https://api.groq.com/openai/v1/chat/completions';
 const CER = 'https://api.cerebras.ai/v1/chat/completions';
 const HF = 'https://api-inference.huggingface.co/models/';
@@ -154,11 +153,11 @@ class AITeam {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamAlpha = new AITeam('Alpha ⚡', [
   makeProvider('α-github-gpt-4o', 'github', GH, getEnv('GITHUB_TOKEN'), 'gpt-4o', 50, 'tier1'),
-  makeProvider('α-nvidia-nemotron-3-340b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'nvidia/nemotron-4-340b-instruct', 1000, 'tier1'),
-  makeProvider('α-openai-gpt-oss-120b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'openai/gpt-oss-120b', 1000, 'tier1'),
+  makeCFProvider('α-cf-llama-3.1-70b', '@cf/meta/llama-3.1-70b-instruct', 200, 'tier1'),
+  makeCFProvider('α-cf-qwen-1.5-14b', '@cf/qwen/qwen1.5-14b-chat-awq', 200, 'tier1'),
   makeCFProvider('α-cf-llama3-8b', '@cf/meta/llama-3-8b-instruct', 200, 'tier1'),
   makeCFProvider('α-cf-mistral-7b', '@cf/mistral/mistral-7b-instruct-v0.1', 200, 'tier1'),
-  makeProvider('α-google-gemma-4-31b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'google/gemma-2-27b-it', 1000, 'tier2'),
+  makeCFProvider('α-cf-gemma-7b', '@cf/google/gemma-7b-it', 200, 'tier2'),
   makeCFProvider('α-cf-llama3.3-70b', '@cf/meta/llama-3.3-70b-instruct-fp8-fast', 200, 'tier1'),
 ]);
 teamAlpha.role = 'Advanced Theory Specialist';
@@ -168,9 +167,9 @@ teamAlpha.role = 'Advanced Theory Specialist';
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamBeta = new AITeam('Beta 🧠', [
   makeProvider('β-groq-llama3.3-70b', 'groq', GRQ, getEnv('GROQ_API_KEY'), 'llama-3.3-70b-versatile', 500, 'tier1'),
-  makeProvider('β-meta-llama-3.3-70b', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'meta-llama/llama-3.1-70b-instruct', 1000, 'tier1'),
+  makeCFProvider('β-cf-llama-3.1-8b', '@cf/meta/llama-3.1-8b-instruct', 200, 'tier1'),
   makeProvider('β-cerebras-llama3.1-8b', 'cerebras', CER, getEnv('CEREBRAS_API_KEY'), 'llama3.1-8b', 1000, 'tier1'),
-  makeProvider('β-arcee-trinity-large', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'arcee/trinity-large-preview', 1000, 'tier1'),
+  makeCFProvider('β-cf-mistral-large', '@cf/mistral/mistral-large-2-2402', 100, 'tier1'),
   makeProvider('β-github-gpt-4o-mini', 'github', GH, getEnv('GITHUB_TOKEN'), 'gpt-4o-mini', 50, 'tier1'),
   makeProvider('β-mistral-large', 'mistral', MST, getEnv('MISTRAL_API_KEY'), 'mistral-large-latest', 100, 'tier1'),
   makeProvider('β-hf-zephyr-7b', 'huggingface', HF, getEnv('HF_TOKEN'), 'HuggingFaceH4/zephyr-7b-beta', 500, 'tier2'),
@@ -183,11 +182,11 @@ teamBeta.role = 'Mass MCQ & Application Specialist';
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const teamGamma = new AITeam('Gamma 🔥', [
   makeProvider('γ-gemini-1.5-flash', 'gemini', GEM, getEnv('GEMINI_API_KEY'), 'gemini-1.5-flash-latest', 250, 'tier1'),
-  makeProvider('γ-zai-glm-4.5-air', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'z-ai/glm-4-5-air', 1000, 'tier1'),
+  makeCFProvider('γ-cf-qwen-1.5-7b', '@cf/qwen/qwen1.5-7b-chat-awq', 200, 'tier1'),
   makeProvider('γ-cerebras-llama3.1-70b', 'cerebras', CER, getEnv('CEREBRAS_API_KEY'), 'llama3.1-70b', 1000, 'tier1'),
-  makeProvider('γ-minimax-m2.5', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'minimax/minimax-m2.5', 1000, 'tier1'),
+  makeCFProvider('γ-cf-hermes-2-pro', '@cf/nousresearch/hermes-2-pro-mistral-7b', 200, 'tier1'),
   makeCFProvider('γ-cf-llama3-8b-instruct', '@cf/meta/llama-3-8b-instruct', 200, 'tier1'),
-  makeProvider('γ-liquidai-lfm-thinking', 'openrouter', OR, getEnv('OPENROUTER_API_KEY'), 'liquidai/lfm-1.2b-thinking', 1000, 'tier2'),
+  makeCFProvider('γ-cf-gemma-2-9b', '@cf/google/gemma-2-9b-it', 100, 'tier2'),
   makeProvider('γ-fireworks-llama70b', 'fireworks', FW, getEnv('FIREWORKS_API_KEY'), 'accounts/fireworks/models/llama-v3p1-70b-instruct', 100, 'tier2'),
   makeProvider('γ-groq-llama3.1-8b', 'groq', GRQ, getEnv('GROQ_API_KEY'), 'llama-3.1-8b-instant', 500, 'tier2'),
 ]);
@@ -1495,4 +1494,3 @@ function parsePYQs(text) {
 }
 
 module.exports = router;
-
