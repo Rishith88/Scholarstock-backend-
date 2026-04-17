@@ -12,7 +12,7 @@ const DraftMaterial = require('../models/DraftMaterial');
 const getEnv = (key) => {
   const val = process.env[key];
   if (!val || val === 'undefined') return '';
-  return val.replace(/[\'"]/g, '').trim();
+  return val.replace(/['"]/g, '').trim();
 };
 
 // ── Auto-download DejaVu Sans (full Unicode support) on first run ──
@@ -42,7 +42,7 @@ async function ensureFonts() {
 ensureFonts();
 
 // ── Supabase client for PDF storage ──
-const SUPABASE_BUCKET = getEnv('SUPABASE_BUCKET') || 'materials';
+const SUPABASE_BUCKET = getEnv('SUPABASE_BUCKET') || 'pdfs';
 const supabaseUrl = getEnv('SUPABASE_URL');
 const supabaseKey = getEnv('SUPABASE_SERVICE_KEY') || getEnv('SUPABASE_ANON_KEY');
 
@@ -1109,7 +1109,7 @@ OUTPUT FORMAT — numbered list, one formula per line:
 CRITICAL RULES:
 - Use UNICODE SYMBOLS ONLY: θ, π, α, β, λ, μ, ², ³, √, ∞, Σ, Δ, ±, ≤, ≥, ≈
 - Write fractions as (a/b), e.g.: KE = (1/2)mv²
-- ABSOLUTELY NO LaTeX backslashes (no \\frac, \\cos, \\theta, \\sqrt, \\alpha)
+- ABSOLUTELY NO LaTeX backslashes (no \frac, \cos, \theta, \sqrt, \alpha)
 - Plain text only. No JSON. No markdown.
 
 1. `;
