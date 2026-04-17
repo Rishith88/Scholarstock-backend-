@@ -400,8 +400,6 @@ router.post('/approve', auth, verifyAdmin, async (req, res) => {
 
     let published = 0;
     for (const item of items) {
-      if (!item.approved) continue;
-
       // Generate watermarked PDF
       const pdfPath = await generateWatermarkedPDF(item);
 
@@ -1357,7 +1355,7 @@ async function runTeamPipeline(team, index) {
       diagramDescription,
       suggestedPrice: difficulty === 'Easy' ? 5 : difficulty === 'Hard' ? 15 : 9,
       pages: Math.max(25, 18 + Math.floor((theoryText.length * 1.5 + mcqs.length * 400 + solvedExamples.length * 600 + prevYearQuestions.length * 600) / 1000)),
-      approved: false,
+      approved: true,
       batchId: contentEngine.startedAt.getTime().toString()
     };
 
