@@ -9,6 +9,19 @@ function genCode() {
   return crypto.randomBytes(4).toString('hex').toUpperCase();
 }
 
+// GET /api/study-rooms/my — rooms created by or joined by user (MUST be before /:id)
+router.get('/my', verifyToken, async (req, res) => {
+  try {
+    const rooms = await StudyRoom.find({
+      'members.userId': req.userId,
+      status: 'active',
+    }).select('-messages -whiteboardData').sort({ lastActivity: -1 });
+    res.json({ success: true, rooms });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // GET /api/study-rooms — list public rooms + user's rooms
 router.get('/', verifyToken, async (req, res) => {
   try {
@@ -29,19 +42,6 @@ router.get('/', verifyToken, async (req, res) => {
       .sort({ lastActivity: -1 })
       .limit(50);
 
-    res.json({ success: true, rooms });
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// GET /api/study-rooms/my — rooms created by or joined by user
-router.get('/my', verifyToken, async (req, res) => {
-  try {
-    const rooms = await StudyRoom.find({
-      'members.userId': req.userId,
-      status: 'active',
-    }).select('-messages -whiteboardData').sort({ lastActivity: -1 });
     res.json({ success: true, rooms });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
@@ -107,7 +107,7 @@ router.post('/', verifyToken, async (req, res) => {
   }
 });
 
-// POST /api/study-rooms/join — join by invite code
+// POST /api/study-rooms/join — join by invite code (MUST be before /:id routes)
 router.post('/join', verifyToken, async (req, res) => {
   try {
     const { inviteCode } = req.body;
