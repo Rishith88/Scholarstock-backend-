@@ -77,6 +77,15 @@ app.use('/api/content-engine', require('./routes/contentEngine'));
 // Pricing Plans
 app.use('/api/pricing-plans', require('./routes/pricingPlans'));
 
+// Study Rooms (Feature 4 — Collaborative Study Rooms)
+app.use('/api/study-rooms', require('./routes/studyRooms'));
+
+// Universities (Feature 3 — University Course Sync)
+app.use('/api/universities', require('./routes/universities'));
+
+// Flashcards & Spaced Repetition (Feature 5)
+app.use('/api/flashcards', require('./routes/flashcards'));
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
