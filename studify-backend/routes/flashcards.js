@@ -27,6 +27,62 @@ function sm2(card, quality) {
   return { easeFactor, interval, repetitions, dueDate };
 }
 
+// POST /api/flashcards/generate — generate flashcards from text using AI
+router.post('/generate', verifyToken, async (req, res) => {
+  try {
+    const { text, deckId, count = 5 } = req.body;
+    if (!text || !deckId) {
+      return res.status(400).json({ success: false, message: 'text and deckId required' });
+    }
+
+    // Verify deck exists and belongs to user
+    const deck = await FlashcardDeck.findOne({ _id: deckId, userId: req.userId });
+    if (!deck) return res.status(404).json({ success: false, message: 'Deck not found' });
+
+    // Simple AI-free flashcard generation from text
+    // Split text into sentences and create Q&A pairs
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+    const cards = [];
+
+    for (let i = 0; i < Math.min(count, sentences.length); i++) {
+      const sentence = sentences[i].trim();
+      if (sentence.length < 10) continue;
+
+      // Extract key terms (simple approach: capitalize words)
+      const words = sentence.split(/\s+/);
+      const keyWord = words.find(w => w.length > 5 && w[0] === w[0].toUpperCase()) || words[Math.floor(words.length / 2)];
+
+      cards.push({
+        front: `What is mentioned about ${keyWord || 'this topic'}?`,
+        back: sentence,
+        hint: keyWord || 'Key term',
+        tags: ['generated', 'auto'],
+      });
+    }
+
+    if (cards.length === 0) {
+      return res.status(400).json({ success: false, message: 'Could not generate flashcards from text' });
+    }
+
+    // Bulk insert cards
+    const toInsert = cards.map(c => ({
+      userId: req.userId,
+      deckId,
+      front: c.front,
+      back: c.back,
+      hint: c.hint,
+      tags: c.tags,
+    }));
+
+    const inserted = await Flashcard.insertMany(toInsert);
+    await FlashcardDeck.findByIdAndUpdate(deckId, { $inc: { cardCount: inserted.length } });
+
+    res.json({ success: true, count: inserted.length, cards: inserted });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // GET /api/flashcards/decks — list user's decks
 router.get('/decks', verifyToken, async (req, res) => {
   try {
