@@ -36,7 +36,8 @@ if (supabaseUrl && supabaseKey) {
         const { data: buckets, error: listError } = await supabase.storage.listBuckets();
         
         if (listError) {
-          throw new Error(`Supabase listBuckets failed: ${listError.message}`);
+          console.warn(`⚠️ [Admin] Could not list buckets: ${listError.message}`);
+          return;
         }
 
         const exists = buckets && buckets.find(b => b.name === SUPABASE_BUCKET);
@@ -45,23 +46,28 @@ if (supabaseUrl && supabaseKey) {
           const { error: createError } = await supabase.storage.createBucket(SUPABASE_BUCKET, { public: true });
           
           if (createError) {
-            throw new Error(`Supabase createBucket failed: ${createError.message}`);
+            console.warn(`⚠️ [Admin] Could not create bucket (RLS policy may be blocking): ${createError.message}`);
+            console.warn('⚠️ [Admin] Uploads will use local storage fallback instead.');
+            supabase = null; // Disable Supabase, use local storage
+          } else {
+            console.log(`✅ Supabase bucket '${SUPABASE_BUCKET}' created.`);
           }
-          console.log(`✅ Supabase bucket '${SUPABASE_BUCKET}' created.`);
         } else {
           console.log(`[Admin] Supabase bucket '${SUPABASE_BUCKET}' is available.`);
         }
       } catch (e) {
-        console.error('⚠️ [Admin] CRITICAL: Supabase bucket initialization failed:', e.message);
-        console.error('⚠️ [Admin] This is likely due to invalid SUPABASE_URL or SUPABASE_SERVICE_KEY. File uploads and publishing WILL FAIL.');
+        console.warn('⚠️ [Admin] Supabase bucket initialization failed:', e.message);
+        console.warn('⚠️ [Admin] Uploads will use local storage fallback instead.');
+        supabase = null; // Disable Supabase, use local storage
       }
     })();
   } catch (e) {
-    console.error('⚠️ [Admin] CRITICAL: createClient failed. This is likely due to an invalid URL format.', e.message);
+    console.error('⚠️ [Admin] Supabase initialization failed:', e.message);
+    supabase = null; // Disable Supabase, use local storage
   }
 } else {
   console.warn('⚠️ [Admin] SUPABASE_URL or SUPABASE_SERVICE_KEY environment variables are missing.');
-  console.warn('⚠️ [Admin] All file uploads and publishing features will be disabled.');
+  console.warn('⚠️ [Admin] Uploads will use local storage instead.');
 }
 
 
