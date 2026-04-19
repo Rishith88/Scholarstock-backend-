@@ -46,8 +46,9 @@ exports.verifyToken = async (req, res, next) => {
 
     return res.status(401).json({ success: false, message: 'Invalid token payload' });
   } catch (error) {
+    console.error('Token verification error:', error.message);
     if (error.name === 'JsonWebTokenError') {
-      return res.status(401).json({ success: false, message: 'Invalid token' });
+      return res.status(401).json({ success: false, message: 'Invalid token: ' + error.message });
     }
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ success: false, message: 'Token expired' });
