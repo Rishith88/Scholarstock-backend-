@@ -98,6 +98,14 @@ app.use('/api/course-sync', require('./routes/courseSyncRoutes'));
 // Shortcuts API (Feature 8)
 app.use('/api/shortcuts', require('./routes/shortcutsRoutes'));
 
+// ── NEW: 11 Massive Features Backend ──
+app.use('/api/essay-scorer', require('./routes/essayScorer'));
+app.use('/api/wellness', require('./routes/wellness'));
+app.use('/api/scholar-coins', require('./routes/scholarCoins'));
+app.use('/api/peer-tutoring', require('./routes/peerTutoring'));
+app.use('/api/competitions', require('./routes/competitions'));
+app.use('/api/freelance', require('./routes/freelance'));
+app.use('/api/store', require('./routes/studyStore'));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

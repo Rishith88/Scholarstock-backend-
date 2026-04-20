@@ -392,6 +392,36 @@ router.post('/preview-pdf-stream', auth, verifyAdmin, async (req, res) => {
   }
 });
 
+// POST /api/content-engine/summarize-pdf
+router.post('/summarize-pdf', auth, async (req, res) => {
+  try {
+    const { title, subcategory, examCategory } = req.body;
+    
+    const prompt = `You are an expert academic summarizer for ${examCategory}. 
+Summarize the study material: "${title}" which is part of the "${subcategory}" syllabus. 
+Provide a high-yield summary including:
+1. OVERVIEW: A concise 2-3 sentence overview of the document's core purpose.
+2. KEY POINTS: A list of the 4 most important concepts, formulas, or facts.
+3. STRATEGY: A one-sentence exam strategy for this specific material.
+
+Format the output as a clean JSON object with keys: "overview", "keyPoints" (array), and "strategy".
+Do not include any other text besides the JSON.`;
+
+    // Use Gamma team for foundation/research tasks
+    const responseText = await callAIWithRetry(teamGamma, prompt);
+    const summary = universalParser(responseText, 'json');
+
+    if (summary && summary.overview) {
+      res.json({ success: true, summary });
+    } else {
+      throw new Error("Failed to parse summary");
+    }
+  } catch (err) {
+    console.error('Summarize error:', err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 // POST /api/content-engine/approve
 router.post('/approve', auth, verifyAdmin, async (req, res) => {
   try {
