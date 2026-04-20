@@ -12,4 +12,5 @@ const sharedNoteSchema = new mongoose.Schema({
 sharedNoteSchema.index({ roomId: 1 });
 sharedNoteSchema.index({ lastEditedAt: -1 });
 
-module.exports = mongoose.model('SharedNote', sharedNoteSchema);
+// Check if model already exists to avoid OverwriteModelError
+module.exports = mongoose.models.SharedNote || mongoose.model('SharedNote', sharedNoteSchema);

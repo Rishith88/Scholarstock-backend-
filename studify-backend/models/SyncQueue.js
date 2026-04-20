@@ -14,4 +14,5 @@ const syncQueueSchema = new mongoose.Schema({
 syncQueueSchema.index({ userId: 1, synced: 1 });
 syncQueueSchema.index({ timestamp: 1 });
 
-module.exports = mongoose.model('SyncQueue', syncQueueSchema);
+// Check if model already exists to avoid OverwriteModelError
+module.exports = mongoose.models.SyncQueue || mongoose.model('SyncQueue', syncQueueSchema);

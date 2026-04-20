@@ -24,4 +24,5 @@ const universitySchema = new mongoose.Schema({
 universitySchema.index({ universityId: 1 });
 universitySchema.index({ name: 1 });
 
-module.exports = mongoose.model('University', universitySchema);
+// Check if model already exists to avoid OverwriteModelError
+module.exports = mongoose.models.University || mongoose.model('University', universitySchema);

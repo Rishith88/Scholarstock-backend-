@@ -17,4 +17,5 @@ const dashboardLayoutSchema = new mongoose.Schema({
 
 dashboardLayoutSchema.index({ userId: 1 });
 
-module.exports = mongoose.model('DashboardLayout', dashboardLayoutSchema);
+// Check if model already exists to avoid OverwriteModelError
+module.exports = mongoose.models.DashboardLayout || mongoose.model('DashboardLayout', dashboardLayoutSchema);

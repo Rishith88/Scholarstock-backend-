@@ -13,4 +13,5 @@ const courseSyncRecordSchema = new mongoose.Schema({
 courseSyncRecordSchema.index({ userId: 1, universityId: 1, courseCode: 1 });
 courseSyncRecordSchema.index({ syncedAt: -1 });
 
-module.exports = mongoose.model('CourseSyncRecord', courseSyncRecordSchema);
+// Check if model already exists to avoid OverwriteModelError
+module.exports = mongoose.models.CourseSyncRecord || mongoose.model('CourseSyncRecord', courseSyncRecordSchema);

@@ -22,4 +22,5 @@ annotationSchema.index({ materialId: 1, userId: 1 });
 annotationSchema.index({ roomId: 1 });
 annotationSchema.index({ createdAt: -1 });
 
-module.exports = mongoose.model('Annotation', annotationSchema);
+// Check if model already exists to avoid OverwriteModelError
+module.exports = mongoose.models.Annotation || mongoose.model('Annotation', annotationSchema);
