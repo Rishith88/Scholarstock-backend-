@@ -3,8 +3,23 @@ const router = express.Router();
 const Flashcard = require('../models/Flashcard');
 const FlashcardDeck = require('../models/FlashcardDeck');
 const { verifyToken } = require('../middleware/auth');
-const { flashcardReviewLimiter } = require('../middleware/rateLimiter');
-const { generateAnkiPackage } = require('../utils/ankiExport');
+
+// Optional rate limiter - fallback to no-op if not available
+let flashcardReviewLimiter = (req, res, next) => next();
+try {
+  const { flashcardReviewLimiter: limiter } = require('../middleware/rateLimiter');
+  flashcardReviewLimiter = limiter;
+} catch (err) {
+  console.warn('⚠️ Rate limiter not available, skipping flashcard review rate limiting');
+}
+
+let generateAnkiPackage = null;
+try {
+  const ankiExport = require('../utils/ankiExport');
+  generateAnkiPackage = ankiExport.generateAnkiPackage;
+} catch (err) {
+  console.warn('⚠️ Anki export not available, skipping Anki export functionality');
+}
 
 // ── SM-2 Algorithm ──
 function sm2(card, quality) {

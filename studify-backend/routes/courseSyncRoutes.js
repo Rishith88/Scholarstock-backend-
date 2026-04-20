@@ -1,7 +1,16 @@
 const express = require('express');
 const router = express.Router();
 const { verifyToken } = require('../middleware/auth');
-const { courseSyncLimiter } = require('../middleware/rateLimiter');
+
+// Optional rate limiter - fallback to no-op if not available
+let courseSyncLimiter = (req, res, next) => next();
+try {
+  const { courseSyncLimiter: limiter } = require('../middleware/rateLimiter');
+  courseSyncLimiter = limiter;
+} catch (err) {
+  console.warn('⚠️ Rate limiter not available, skipping course sync rate limiting');
+}
+
 const University = require('../models/University');
 const CourseSyncRecord = require('../models/CourseSyncRecord');
 const Material = require('../models/Material');

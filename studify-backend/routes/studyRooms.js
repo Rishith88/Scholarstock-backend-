@@ -5,7 +5,15 @@ const StudyRoom = require('../models/StudyRoom');
 const Annotation = require('../models/Annotation');
 const SharedNote = require('../models/SharedNote');
 const { verifyToken } = require('../middleware/auth');
-const { roomCreationLimiter } = require('../middleware/rateLimiter');
+
+// Optional rate limiter - fallback to no-op if not available
+let roomCreationLimiter = (req, res, next) => next();
+try {
+  const { roomCreationLimiter: limiter } = require('../middleware/rateLimiter');
+  roomCreationLimiter = limiter;
+} catch (err) {
+  console.warn('⚠️ Rate limiter not available, skipping room creation rate limiting');
+}
 
 // Generate a short invite code
 function genCode() {
