@@ -86,6 +86,18 @@ app.use('/api/universities', require('./routes/universities'));
 // Flashcards & Spaced Repetition (Feature 5)
 app.use('/api/flashcards', require('./routes/flashcards'));
 
+// Dashboard Layout (Feature 7)
+app.use('/api/dashboard', require('./routes/dashboardRoutes'));
+
+// Offline Sync (Feature 6)
+app.use('/api/sync', require('./routes/syncRoutes'));
+
+// Course Sync (Feature 3)
+app.use('/api/course-sync', require('./routes/courseSyncRoutes'));
+
+// Shortcuts API (Feature 8)
+app.use('/api/shortcuts', require('./routes/shortcutsRoutes'));
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

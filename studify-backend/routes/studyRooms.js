@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const StudyRoom = require('../models/StudyRoom');
-const { verifyToken, optionalAuth } = require('../middleware/auth');
+const Annotation = require('../models/Annotation');
+const SharedNote = require('../models/SharedNote');
+const { verifyToken } = require('../middleware/auth');
+const { roomCreationLimiter } = require('../middleware/rateLimiter');
 
 // Generate a short invite code
 function genCode() {
@@ -70,7 +73,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 });
 
 // POST /api/study-rooms — create room
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, roomCreationLimiter, async (req, res) => {
   try {
     const { name, description, subject, examCategory, isPrivate, maxMembers, sharedMaterialId, sharedMaterialTitle } = req.body;
     if (!name) return res.status(400).json({ success: false, message: 'Room name is required' });
@@ -197,10 +200,26 @@ router.put('/:id/notes', verifyToken, async (req, res) => {
     const isMember = room.members.some(m => m.userId.toString() === req.userId.toString());
     if (!isMember) return res.status(403).json({ success: false, message: 'Not a member' });
 
-    room.sharedNotes = notes || '';
+    // Update or create SharedNote
+    let sharedNote = await SharedNote.findOne({ roomId: req.params.id });
+    if (!sharedNote) {
+      sharedNote = await SharedNote.create({
+        noteId: `note-${Date.now()}`,
+        roomId: req.params.id,
+        content: notes || '',
+        lastEditedBy: req.userId,
+      });
+    } else {
+      sharedNote.content = notes || '';
+      sharedNote.lastEditedBy = req.userId;
+      sharedNote.lastEditedAt = new Date();
+      sharedNote.version += 1;
+      await sharedNote.save();
+    }
+
     room.lastActivity = new Date();
     await room.save();
-    res.json({ success: true });
+    res.json({ success: true, sharedNote });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -230,19 +249,29 @@ router.put('/:id/page', verifyToken, async (req, res) => {
 // POST /api/study-rooms/:id/annotation — add annotation
 router.post('/:id/annotation', verifyToken, async (req, res) => {
   try {
-    const { x, y, width, height, color, text, page } = req.body;
+    const { materialId, pageNumber, type, content, color, x, y, width, height } = req.body;
     const room = await StudyRoom.findById(req.params.id);
     if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
 
     const isMember = room.members.some(m => m.userId.toString() === req.userId.toString());
     if (!isMember) return res.status(403).json({ success: false, message: 'Not a member' });
 
-    room.annotations.push({ userId: req.userId, userName: req.user.name, x, y, width, height, color, text, page });
+    const annotation = await Annotation.create({
+      annotationId: `ann-${Date.now()}`,
+      materialId,
+      pageNumber: pageNumber || 1,
+      userId: req.userId,
+      roomId: req.params.id,
+      type: type || 'highlight',
+      content: content || '',
+      color: color || '#3b82f6',
+      position: { x: x || 0, y: y || 0, width: width || 0, height: height || 0 },
+    });
+
     room.lastActivity = new Date();
     await room.save();
 
-    const ann = room.annotations[room.annotations.length - 1];
-    res.json({ success: true, annotation: ann });
+    res.json({ success: true, annotation });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -251,17 +280,13 @@ router.post('/:id/annotation', verifyToken, async (req, res) => {
 // DELETE /api/study-rooms/:id/annotation/:annId — remove annotation
 router.delete('/:id/annotation/:annId', verifyToken, async (req, res) => {
   try {
-    const room = await StudyRoom.findById(req.params.id);
-    if (!room) return res.status(404).json({ success: false, message: 'Room not found' });
-
-    const ann = room.annotations.id(req.params.annId);
-    if (!ann) return res.status(404).json({ success: false, message: 'Annotation not found' });
-    if (ann.userId.toString() !== req.userId.toString()) {
+    const annotation = await Annotation.findOne({ annotationId: req.params.annId });
+    if (!annotation) return res.status(404).json({ success: false, message: 'Annotation not found' });
+    if (annotation.userId.toString() !== req.userId.toString()) {
       return res.status(403).json({ success: false, message: 'Can only delete your own annotations' });
     }
 
-    ann.deleteOne();
-    await room.save();
+    await Annotation.deleteOne({ annotationId: req.params.annId });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });

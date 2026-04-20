@@ -3,6 +3,8 @@ const router = express.Router();
 const Flashcard = require('../models/Flashcard');
 const FlashcardDeck = require('../models/FlashcardDeck');
 const { verifyToken } = require('../middleware/auth');
+const { flashcardReviewLimiter } = require('../middleware/rateLimiter');
+const { generateAnkiPackage } = require('../utils/ankiExport');
 
 // ── SM-2 Algorithm ──
 function sm2(card, quality) {
@@ -240,7 +242,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
 });
 
 // POST /api/flashcards/:id/review — submit review result (SM-2)
-router.post('/:id/review', verifyToken, async (req, res) => {
+router.post('/:id/review', verifyToken, flashcardReviewLimiter, async (req, res) => {
   try {
     const { quality } = req.body; // 0-5
     if (quality === undefined || quality < 0 || quality > 5) {
@@ -287,6 +289,32 @@ router.get('/stats', verifyToken, async (req, res) => {
     const accuracy = stats.totalReviews > 0 ? Math.round((stats.totalCorrect / stats.totalReviews) * 100) : 0;
 
     res.json({ success: true, stats: { totalCards, dueCards, deckCount, totalReviews: stats.totalReviews, accuracy } });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// POST /api/flashcards/export/:deckId — export deck as Anki .apkg file
+router.post('/export/:deckId', verifyToken, async (req, res) => {
+  try {
+    const deck = await FlashcardDeck.findOne({ _id: req.params.deckId, userId: req.userId });
+    if (!deck) return res.status(404).json({ success: false, message: 'Deck not found' });
+
+    const cards = await Flashcard.find({ deckId: req.params.deckId, userId: req.userId });
+    if (cards.length === 0) {
+      return res.status(400).json({ success: false, message: 'Deck has no cards' });
+    }
+
+    const ankiCards = cards.map(c => ({
+      front: c.front,
+      back: c.back,
+    }));
+
+    const apkgBuffer = await generateAnkiPackage(deck.name, ankiCards);
+
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${deck.name}.apkg"`);
+    res.send(apkgBuffer);
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
