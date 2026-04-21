@@ -133,4 +133,38 @@ router.post('/meditation', verifyToken, async (req, res) => {
   }
 });
 
+// GET /api/wellness/meditations — get available meditations
+router.get('/meditations', verifyToken, async (req, res) => {
+  try {
+    const meditations = [
+      { id: 1, name: 'Study Break Calm', duration: '5 min', icon: '🧘', type: 'meditation', description: 'Quick breathing exercise to reset between study sessions.' },
+      { id: 2, name: 'Deep Focus Prep', duration: '10 min', icon: '🎯', type: 'meditation', description: 'Guided visualization to prepare your mind for deep work.' },
+      { id: 3, name: 'Exam Anxiety Relief', duration: '8 min', icon: '😮‍💨', type: 'meditation', description: 'Body scan technique specifically designed for pre-exam stress.' },
+      { id: 4, name: 'Forest Rain', duration: '30 min', icon: '🌧️', type: 'soundscape', description: 'Gentle rain falling on forest canopy with distant thunder.' },
+      { id: 5, name: 'Ocean Waves', duration: '45 min', icon: '🌊', type: 'soundscape', description: 'Rhythmic ocean waves for background study ambient.' },
+      { id: 6, name: 'Sleep Stories: Space', duration: '20 min', icon: '🌌', type: 'sleep', description: 'A narrated journey through the cosmos to help you drift off.' },
+      { id: 7, name: 'Morning Energy', duration: '7 min', icon: '☀️', type: 'meditation', description: 'Start your study day with intention and positive energy.' },
+      { id: 8, name: 'Gratitude Practice', duration: '5 min', icon: '🙏', type: 'meditation', description: 'End-of-day reflection to appreciate your learning journey.' },
+    ];
+    res.json({ success: true, meditations });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/wellness/tips — get wellness tips
+router.get('/tips', verifyToken, async (req, res) => {
+  try {
+    const tips = [
+      { title: '20-20-20 Rule', desc: 'Every 20 min, look at something 20 feet away for 20 seconds.', icon: '👁️' },
+      { title: 'Hydration Check', desc: 'Drink water every hour. Dehydration reduces focus by 25%.', icon: '💧' },
+      { title: 'Movement Break', desc: 'Stand and stretch every 45 min to boost blood flow to your brain.', icon: '🏃' },
+      { title: 'Social Connect', desc: 'Spend 15 min talking to a friend or family member daily.', icon: '💬' },
+    ];
+    res.json({ success: true, tips });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;

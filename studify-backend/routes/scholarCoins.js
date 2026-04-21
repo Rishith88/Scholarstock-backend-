@@ -144,4 +144,40 @@ router.post('/daily-login', verifyToken, async (req, res) => {
   }
 });
 
+// GET /api/scholar-coins/rewards — get available rewards catalog
+router.get('/rewards', verifyToken, async (req, res) => {
+  try {
+    const rewards = [
+      { id: 'hacker_theme', name: 'Dark Hacker Theme', cost: 500, category: 'Themes', icon: '🎨', description: 'Unlock the exclusive matrix-inspired dark theme for your dashboard.', rarity: 'Rare' },
+      { id: 'neon_pack', name: 'Neon Gradient Pack', cost: 750, category: 'Themes', icon: '🌈', description: 'A collection of 5 vibrant neon gradient backgrounds.', rarity: 'Epic' },
+      { id: 'hoodie', name: 'ScholarStock Hoodie', cost: 2000, category: 'Merch', icon: '👕', description: 'Premium quality hoodie with embroidered ScholarStock logo.', rarity: 'Legendary' },
+      { id: 'amazon_card', name: 'Amazon ₹500 Gift Card', cost: 5000, category: 'Gift Cards', icon: '🎁', description: 'Redeem for an Amazon India gift card worth ₹500.', rarity: 'Legendary' },
+      { id: 'avatar_frame', name: 'Custom Avatar Frame', cost: 300, category: 'Customization', icon: '🖼️', description: 'Animated glowing frame around your profile picture.', rarity: 'Common' },
+      { id: 'streak_badge', name: 'Study Streak Badge', cost: 150, category: 'Badges', icon: '🔥', description: 'Display a fire badge next to your name in study rooms.', rarity: 'Common' },
+      { id: 'note_templates', name: 'Premium Note Templates', cost: 400, category: 'Tools', icon: '📝', description: 'Unlock 10 beautifully designed note-taking templates.', rarity: 'Rare' },
+      { id: 'spotify_card', name: 'Spotify ₹300 Gift Card', cost: 3000, category: 'Gift Cards', icon: '🎵', description: 'Spotify Premium gift card for uninterrupted study music.', rarity: 'Epic' },
+    ];
+    res.json({ success: true, rewards });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// GET /api/scholar-coins/earn-methods — get ways to earn coins
+router.get('/earn-methods', verifyToken, async (req, res) => {
+  try {
+    const methods = [
+      { action: 'Upload study notes', coins: '+50', icon: '📤', frequency: 'Per upload' },
+      { action: 'Complete a quiz', coins: '+25', icon: '📝', frequency: 'Per quiz' },
+      { action: 'Daily login streak', coins: '+10', icon: '🔥', frequency: 'Daily' },
+      { action: 'Help a peer (tutoring)', coins: '+75', icon: '🤝', frequency: 'Per session' },
+      { action: 'Complete a VR Lab', coins: '+40', icon: '🧪', frequency: 'Per lab' },
+      { action: 'Refer a friend', coins: '+200', icon: '👥', frequency: 'Per referral' },
+    ];
+    res.json({ success: true, methods });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 module.exports = router;
